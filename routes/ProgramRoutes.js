@@ -114,6 +114,27 @@ router.delete('/:id_program', (req, res) => {
   });
 });
 
+// Route untuk 3 program terbaru
+router.get('/latest', (req, res) => {
+  const sql = `
+    SELECT p.*, k.jenis_kategori 
+    FROM tbl_programdonasi p
+    JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
+    ORDER BY p.id_program DESC
+    LIMIT 3
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Program tidak ditemukan' });
+    }
+
+    res.status(200).json(results);
+  });
+});
+
 //Detail program
 router.get('/:id_program', (req, res) => {
   const { id_program } = req.params;
@@ -127,17 +148,6 @@ router.get('/:id_program', (req, res) => {
       return res.status(404).send('Program tidak ditemukan'); // Respons jika tidak ada data
     }
     res.json(results[0]); // Respons sukses dengan data program
-  });
-});
-
-// Route untuk 3 program terbaru
-router.get('/latest', (req, res) => {
-  const sql = 'SELECT * FROM tbl_programdonasi ORDER BY tgl_mulai DESC LIMIT 3';
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (results.length === 0)
-      return res.status(404).json({ message: 'Program tidak ditemukan' });
-    res.json(results);
   });
 });
 
