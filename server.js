@@ -19,9 +19,17 @@ app.use(
   }),
 );
 
-// Rute untuk user
-const UserRoutes = require('./routes/UserRoutes');
-app.use('/user', UserRoutes);
+// Rute untuk instansi
+const InstansiRoutes = require('./routes/InstansiRoutes');
+app.use('/instansi', InstansiRoutes);
+
+// Rute untuk program
+const ProgramRoutes = require('./routes/ProgramRoutes');
+app.use('/program', ProgramRoutes);
+
+//Mildware untuk mengupload file
+app.use('/instansi', express.static(path.join(__dirname, 'instansi')));
+app.use('/program', express.static(path.join(__dirname, 'program')));
 
 // Start server
 const PORT = 5000;

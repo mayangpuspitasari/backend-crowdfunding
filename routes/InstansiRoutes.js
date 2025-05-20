@@ -1,7 +1,7 @@
-const express = requie('express');
+const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const instansi = require('../middleware/instansi');
+const instansi = require('../mildware/instansi');
 const fs = require('fs');
 
 // Menampilkan semua data instansi
@@ -91,4 +91,7 @@ router.put(
     });
   },
 );
+
+// Export router
+module.exports = router;
 
