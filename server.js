@@ -27,6 +27,10 @@ app.use('/instansi', InstansiRoutes);
 const ProgramRoutes = require('./routes/ProgramRoutes');
 app.use('/program', ProgramRoutes);
 
+// Rute untuk Kategori
+const KategoriRoutes = require('./routes/KategoriRoutes');
+app.use('/kategori', KategoriRoutes);
+
 //Mildware untuk mengupload file
 app.use('/instansi', express.static(path.join(__dirname, 'instansi')));
 app.use('/program', express.static(path.join(__dirname, 'program')));

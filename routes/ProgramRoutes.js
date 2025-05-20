@@ -115,7 +115,7 @@ router.delete('/:id_program', (req, res) => {
 });
 
 // Route untuk 3 program terbaru
-router.get('/latest', (req, res) => {
+router.get('/terbaru', (req, res) => {
   const sql = `
     SELECT p.*, k.jenis_kategori 
     FROM tbl_programdonasi p
