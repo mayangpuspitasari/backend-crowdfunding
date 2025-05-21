@@ -65,6 +65,7 @@ router.put('/:id_kegiatan', kegiatan.single('gambar'), (req,res) => {
             judul_kegiatan,
             deskripsi,
             tanggal_kegiatan,
+            id_kegiatan
         ], (err) => {
             if (err) {
             return res.status(500).send(err);
@@ -82,7 +83,7 @@ router.delete('/:id_kegiatan', (req,res) => {
         if (err) {
             return res.status(500).send(err)
         }
-        res.status.send('Kegiatan Berhasil Dihapus')
+        res.status(200).send('Kegiatan Berhasil Dihapus')
     });
 });
 
