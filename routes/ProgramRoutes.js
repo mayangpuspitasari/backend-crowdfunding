@@ -131,9 +131,22 @@ router.get('/terbaru', (req, res) => {
       return res.status(404).json({ message: 'Program tidak ditemukan' });
     }
 
-    res.status(200).json(results);
+    res.status(200).json(results.map((program) => {
+      const persentase = program.target_donasi > 0
+        ? Math.round((program.total_terkumpul / program.target_donasi) * 100)
+        : 0;
+
+      const hari_tersisa = Math.ceil((new Date(program.tgl_berakhir) - new Date()) / (1000 * 60 * 60 * 24));
+
+      return {
+        ...program,
+        persentase,
+        hari_tersisa,
+      };
+    }));
   });
-});
+}); 
+
 
 //Detail program
 router.get('/:id_program', (req, res) => {
@@ -142,14 +155,36 @@ router.get('/:id_program', (req, res) => {
   const sql = 'SELECT * FROM tbl_programdonasi WHERE id_program = ?';
   db.query(sql, [id_program], (err, results) => {
     if (err) {
-      return res.status(500).send(err); // Mengirimkan respons error dan menghentikan eksekusi
+      return res.status(500).send(err);
     }
     if (results.length === 0) {
-      return res.status(404).send('Program tidak ditemukan'); // Respons jika tidak ada data
+      return res.status(404).send('Program tidak ditemukan');
     }
-    res.json(results[0]); // Respons sukses dengan data program
+
+    const program = results[0];
+
+    // Hitung Persentase
+    const target = parseFloat(program.target_donasi);
+    const terkumpul = parseFloat(program.total_terkumpul);
+    const persentase = target > 0 ? Math.round((terkumpul / target) * 100) : 0;
+
+    // Hitung Sisa Hari
+    const today = new Date();
+    const endDate = new Date(program.tgl_berakhir);
+    const selisihMs = endDate - today;
+    const sisa_hari = selisihMs > 0 ? Math.ceil(selisihMs / (1000 * 60 * 60 * 24)) : 0;
+
+    // Gabungkan hasil ke response
+    const detailProgram = {
+      ...program,
+      persentase,
+      sisa_hari
+    };
+
+    res.json(detailProgram);
   });
 });
+
 
 // Export router
 module.exports = router;
