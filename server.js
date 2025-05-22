@@ -35,9 +35,15 @@ app.use('/kategori', KategoriRoutes);
 const KegiatanRoutes = require('./routes/KegiatanRoutes');
 app.use('/kegiatan', KegiatanRoutes);
 
+// Rute untuk Donasi
+const DonasiRoutes = require('./routes/DonasiRoutes');
+app.use('/donasi', DonasiRoutes);
+
 //Mildware untuk mengupload file
 app.use('/instansi', express.static(path.join(__dirname, 'instansi')));
 app.use('/program', express.static(path.join(__dirname, 'program')));
+app.use('/bukti', express.static(path.join(__dirname, 'bukti')));
+app.use('/kegiatan', express.static(path.join(__dirname, 'kegiatan')));
 
 // Start server
 const PORT = 5000;
