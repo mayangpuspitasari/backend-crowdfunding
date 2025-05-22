@@ -33,6 +33,33 @@ router.post('/', program.single('gambar'), (req, res) => {
   } = req.body;
   const gambar = req.file ? `/program/${req.file.filename}` : null;
 
+  //vALIDASI FIELD
+  const validasiFields = [
+    'judul_program',
+    'deskripsi',
+    'id_kategori',
+    'tgl_mulai',
+    'tgl_berakhir',
+    'jumlah_donatur',
+    'target_donasi',
+    'total_terkumpul',
+    'status',
+  ];
+
+  for (const field of validasiFields) {
+    const value = req.body[field];
+
+    //ubah semua jadi string dulu baru di-trim
+    if (!value || String(value).trim() === '') {
+      return res.status(400).send({ error: `${field} Tidak Boleh Kosong` });
+    }
+  }
+
+  //Validasi Gambar File
+  if (!req.file) {
+    return res.status(400).send({ error: 'Gambar Tidak Boleh Kosong' });
+  }
+
   const sql =
     'INSERT INTO tbl_programdonasi (gambar, judul_program, deskripsi, id_kategori, tgl_mulai, tgl_berakhir, jumlah_donatur, target_donasi, total_terkumpul, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   db.query(
@@ -131,22 +158,28 @@ router.get('/terbaru', (req, res) => {
       return res.status(404).json({ message: 'Program tidak ditemukan' });
     }
 
-    res.status(200).json(results.map((program) => {
-      const persentase = program.target_donasi > 0
-        ? Math.round((program.total_terkumpul / program.target_donasi) * 100)
-        : 0;
+    res.status(200).json(
+      results.map((program) => {
+        const persentase =
+          program.target_donasi > 0
+            ? Math.round(
+                (program.total_terkumpul / program.target_donasi) * 100,
+              )
+            : 0;
 
-      const hari_tersisa = Math.ceil((new Date(program.tgl_berakhir) - new Date()) / (1000 * 60 * 60 * 24));
+        const hari_tersisa = Math.ceil(
+          (new Date(program.tgl_berakhir) - new Date()) / (1000 * 60 * 60 * 24),
+        );
 
-      return {
-        ...program,
-        persentase,
-        hari_tersisa,
-      };
-    }));
+        return {
+          ...program,
+          persentase,
+          hari_tersisa,
+        };
+      }),
+    );
   });
-}); 
-
+});
 
 //Detail program
 router.get('/:id_program', (req, res) => {
@@ -172,19 +205,19 @@ router.get('/:id_program', (req, res) => {
     const today = new Date();
     const endDate = new Date(program.tgl_berakhir);
     const selisihMs = endDate - today;
-    const sisa_hari = selisihMs > 0 ? Math.ceil(selisihMs / (1000 * 60 * 60 * 24)) : 0;
+    const sisa_hari =
+      selisihMs > 0 ? Math.ceil(selisihMs / (1000 * 60 * 60 * 24)) : 0;
 
     // Gabungkan hasil ke response
     const detailProgram = {
       ...program,
       persentase,
-      sisa_hari
+      sisa_hari,
     };
 
     res.json(detailProgram);
   });
 });
-
 
 // Export router
 module.exports = router;
