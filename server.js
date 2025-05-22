@@ -39,6 +39,14 @@ app.use('/kegiatan', KegiatanRoutes);
 const DonasiRoutes = require('./routes/DonasiRoutes');
 app.use('/donasi', DonasiRoutes);
 
+//Rute untuk Laporan
+const LaporanRoutes = require('./routes/LaporanRoutes');
+app.use('/laporan', LaporanRoutes);
+
+//Rute Untuk Download
+const DownloadRoutes = require('./routes/DownloadRoutes');
+app.use('/download', LaporanRoutes);
+
 //Mildware untuk mengupload file
 app.use('/instansi', express.static(path.join(__dirname, 'instansi')));
 app.use('/program', express.static(path.join(__dirname, 'program')));
