@@ -45,6 +45,7 @@ router.post('/', kegiatan.single('gambar'), (req, res) => {
   if (!req.file) {
     return res.status(400).send({ error: 'Gambar Tidak Boleh Kosong' });
   }
+
   const sql =
     ' INSERT INTO tbl_kegiatan (gambar,id_program,judul_kegiatan,deskripsi,tanggal_kegiatan) VALUES (?, ?, ?, ?, ?)';
   db.query(
