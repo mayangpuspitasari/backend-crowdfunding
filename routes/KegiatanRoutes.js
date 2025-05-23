@@ -105,7 +105,11 @@ router.delete('/:id_kegiatan', (req, res) => {
 router.get('/:id_kegiatan', (req, res) => {
   const { id_kegiatan } = req.params;
 
-  const sql = 'SELECT * FROM tbl_kegiatan WHERE id_kegiatan = ?';
+  const sql = `
+    SELECT p.*, k.judul_program 
+    FROM tbl_kegiatan p 
+    JOIN tbl_programdonasi k ON p.id_program = k.id_program
+    `;
   db.query(sql, [id_kegiatan], (err, results) => {
     if (err) {
       return res.status(500).send(err);
