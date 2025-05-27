@@ -70,6 +70,7 @@ router.post('/', bukti.single('bukti_pembayaran'), (req, res) => {
 });
 
 //Verifikasi Donasi Berhasil
+
 router.put('/verifikasi_berhasil/:id_donasi', (req, res) => {
   const { id_donasi } = req.params;
   const sql = ` UPDATE tbl_donasi SET verifikasi = 1, status_donasi = 'Berhasil' WHERE id_donasi = ?`;

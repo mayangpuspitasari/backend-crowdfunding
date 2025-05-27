@@ -45,7 +45,7 @@ app.use('/laporan', LaporanRoutes);
 
 //Rute Untuk Download
 const DownloadRoutes = require('./routes/DownloadRoutes');
-app.use('/download', LaporanRoutes);
+app.use('/download', DownloadRoutes);
 
 //Mildware untuk mengupload file
 app.use('/instansi', express.static(path.join(__dirname, 'instansi')));

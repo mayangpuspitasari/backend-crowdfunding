@@ -1,3 +1,6 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../config/db');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const stream = require('stream');
@@ -117,3 +120,4 @@ router.get('/export/pdf', (req, res) => {
   });
 });
 module.exports = router;
+
