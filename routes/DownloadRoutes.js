@@ -21,7 +21,7 @@ router.get('/export/excel', (req, res) => {
     if (err) {
       return res
         .status(500)
-        .json({ error: 'Gagal mengambil data laporan donasi', detail: err });
+        .json({ error: 'Gagal mengambil data laporan donasi!!', detail: err });
     }
 
     // Buat workbook Excel
