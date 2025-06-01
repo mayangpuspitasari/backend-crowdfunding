@@ -142,7 +142,7 @@ router.delete('/:id_program', (req, res) => {
 });
 
 // Route untuk 3 program terbaru
-router.get('/terbaru', (req, res) => {
+router.get('/terbaru', async (req, res) => {
   const sql = `
     SELECT p.*, k.jenis_kategori 
     FROM tbl_programdonasi p
@@ -151,35 +151,61 @@ router.get('/terbaru', (req, res) => {
     LIMIT 3
   `;
 
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const [results] = await db.query(sql);
 
     if (results.length === 0) {
       return res.status(404).json({ message: 'Program tidak ditemukan' });
     }
 
-    res.status(200).json(
-      results.map((program) => {
-        const persentase =
-          program.target_donasi > 0
-            ? Math.round(
-                (program.total_terkumpul / program.target_donasi) * 100,
-              )
-            : 0;
+    const data = results.map((program) => {
+      const persentase =
+        program.target_donasi > 0
+          ? Math.round(
+              (program.total_terkumpul / program.target_donasi) * 100,
+            )
+          : 0;
 
-        const hari_tersisa = Math.ceil(
-          (new Date(program.tgl_berakhir) - new Date()) / (1000 * 60 * 60 * 24),
-        );
+      const hari_tersisa = Math.ceil(
+        (new Date(program.tgl_berakhir) - new Date()) / (1000 * 60 * 60 * 24),
+      );
 
-        return {
-          ...program,
-          persentase,
-          hari_tersisa,
-        };
-      }),
-    );
-  });
+      return {
+        ...program,
+        persentase,
+        hari_tersisa,
+      };
+    });
+
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
+
+//Ringkasan Donasi
+router.get('/ringkasan', async (req, res) => {
+  try {
+    const [programRows] = await db.query('SELECT COUNT(*) AS totalProgram FROM tbl_programdonasi');
+    const [donasiRows] = await db.query('SELECT SUM(total_terkumpul) AS totalDonasi FROM tbl_programdonasi');
+    const [donaturRows] = await db.query("SELECT COUNT(DISTINCT id_user) AS totalDonatur FROM tbl_user WHERE role = 'donatur'");
+
+    const totalProgram = programRows[0]?.totalProgram || 0;
+    const totalDonasi = donasiRows[0]?.totalDonasi || 0;
+    const totalDonatur = donaturRows[0]?.totalDonatur || 0;
+
+    res.json({
+      totalProgram,
+      totalDonasi,
+      totalDonatur
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Gagal mengambil data ringkasan', error: error.message });
+  }
+});
+
 
 //Detail program
 router.get('/:id_program', (req, res) => {

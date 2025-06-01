@@ -70,18 +70,62 @@ router.post('/', bukti.single('bukti_pembayaran'), (req, res) => {
 });
 
 //Verifikasi Donasi Berhasil
-
 router.put('/verifikasi_berhasil/:id_donasi', (req, res) => {
   const { id_donasi } = req.params;
-  const sql = ` UPDATE tbl_donasi SET verifikasi = 1, status_donasi = 'Berhasil' WHERE id_donasi = ?`;
 
-  db.query(sql, [id_donasi], (err) => {
+  // Update status donasi jadi berhasil dan verifikasi = 1
+  const updateStatusSql = `UPDATE tbl_donasi SET verifikasi = 1, status_donasi = 'Berhasil' WHERE id_donasi = ?`;
+
+  db.query(updateStatusSql, [id_donasi], (err) => {
     if (err) {
       return res.status(500).send(err);
     }
-    res.status(200).send('Donasi Berhasil Diverifikasi');
+
+    // Ambil data donasi setelah diupdate statusnya
+    const getDonasiSql = `SELECT id_user, id_program, jumlah_donasi FROM tbl_donasi WHERE id_donasi = ?`;
+
+    db.query(getDonasiSql, [id_donasi], (err2, results) => {
+      if (err2) return res.status(500).send(err2);
+
+      if (results.length === 0)
+        return res.status(404).send('Donasi tidak ditemukan');
+
+      const donasi = results[0];
+
+      // Cek apakah user sudah pernah donasi berhasil ke program ini (kecuali donasi ini)
+      const cekDonaturSql = `
+        SELECT COUNT(*) AS count FROM tbl_donasi
+        WHERE id_user = ? AND id_program = ? AND status_donasi = 'Berhasil' AND id_donasi <> ?`;
+
+      db.query(
+        cekDonaturSql,
+        [donasi.id_user, donasi.id_program, id_donasi],
+        (err3, countResult) => {
+          if (err3) return res.status(500).send(err3);
+
+          const isFirstDonatur = countResult[0].count === 0;
+
+          // Update total_terkumpul dan jumlah_donatur di program
+          let updateProgramSql = `UPDATE tbl_programdonasi SET total_terkumpul = total_terkumpul + ?`;
+          const params = [donasi.jumlah_donasi];
+
+          if (isFirstDonatur) {
+            updateProgramSql += `, jumlah_donatur = jumlah_donatur + 1`;
+          }
+          updateProgramSql += ` WHERE id_program = ?`;
+          params.push(donasi.id_program);
+
+          db.query(updateProgramSql, params, (err4) => {
+            if (err4) return res.status(500).send(err4);
+
+            res.status(200).send('Donasi berhasil diverifikasi dan total program diperbarui');
+          });
+        },
+      );
+    });
   });
 });
+
 
 //Verifikasi Donasi Gagal
 router.put('/verifikasi_gagal/:id_donasi', (req, res) => {

@@ -19,6 +19,12 @@ app.use(
   }),
 );
 
+//Mildware untuk mengupload file
+app.use('/instansi', express.static(path.join(__dirname, 'instansi')));
+app.use('/program', express.static(path.join(__dirname, 'program')));
+app.use('/bukti', express.static(path.join(__dirname, 'bukti')));
+app.use('/kegiatan', express.static(path.join(__dirname, 'kegiatan')));
+
 // Rute untuk instansi
 const InstansiRoutes = require('./routes/InstansiRoutes');
 app.use('/instansi', InstansiRoutes);
@@ -47,11 +53,7 @@ app.use('/laporan', LaporanRoutes);
 const DownloadRoutes = require('./routes/DownloadRoutes');
 app.use('/download', DownloadRoutes);
 
-//Mildware untuk mengupload file
-app.use('/instansi', express.static(path.join(__dirname, 'instansi')));
-app.use('/program', express.static(path.join(__dirname, 'program')));
-app.use('/bukti', express.static(path.join(__dirname, 'bukti')));
-app.use('/kegiatan', express.static(path.join(__dirname, 'kegiatan')));
+
 
 // Start server
 const PORT = 5000;
