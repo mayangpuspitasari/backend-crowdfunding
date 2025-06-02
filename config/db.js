@@ -1,16 +1,14 @@
-const mysql = require('mysql2');
-const db = mysql
-  .createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'crowdfunding',
-  })
-  .promise(); 
+const mysql = require('mysql2/promise');
 
-db.connect((err) => {
-  if (err) throw err;
-  console.log('Koneksi Ke Database Berhasil!!!');
+const db = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'crowdfunding',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 module.exports = db;
+

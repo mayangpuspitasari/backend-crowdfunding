@@ -53,8 +53,6 @@ app.use('/laporan', LaporanRoutes);
 const DownloadRoutes = require('./routes/DownloadRoutes');
 app.use('/download', DownloadRoutes);
 
-
-
 // Start server
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
