@@ -5,11 +5,13 @@ const program = require('../mildware/program');
 
 //mengambil semua program
 router.get('/', async (req, res) => {
-  const page = parseInt(req.query.page) || 1; // halaman saat ini
-  const limit = parseInt(req.query.limit) || 6; // item per halaman
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 6;
   const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : '%';
 
   try {
+    // Ambil data sesuai pencarian + pagination
     const [results] = await db.query(
       `
       SELECT 
@@ -18,14 +20,22 @@ router.get('/', async (req, res) => {
         DATEDIFF(p.tgl_berakhir, CURDATE()) AS hari_tersisa
       FROM tbl_programdonasi p
       JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
+      WHERE p.judul_program LIKE ?
       LIMIT ? OFFSET ?
     `,
-      [limit, offset],
+      [search, limit, offset],
     );
 
-    const [[{ total }]] = await db.query(`
-      SELECT COUNT(*) as total FROM tbl_programdonasi
-    `);
+    // Hitung total hasil pencarian (tanpa limit-offset)
+    const [[{ total }]] = await db.query(
+      `
+      SELECT COUNT(*) as total 
+      FROM tbl_programdonasi p
+      JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
+      WHERE p.judul_program LIKE ?
+    `,
+      [search],
+    );
 
     res.json({
       data: results,
@@ -233,27 +243,28 @@ router.get('/ringkasan', async (req, res) => {
   }
 });
 
-//Detail program
-router.get('/:id_program', (req, res) => {
+// Detail program
+router.get('/:id_program', async (req, res) => {
   const { id_program } = req.params;
 
-  const sql = 'SELECT * FROM tbl_programdonasi WHERE id_program = ?';
-  db.query(sql, [id_program], (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
+  try {
+    const [results] = await db.query(
+      'SELECT * FROM tbl_programdonasi WHERE id_program = ?',
+      [id_program],
+    );
+
     if (results.length === 0) {
-      return res.status(404).send('Program tidak ditemukan');
+      return res.status(404).json({ message: 'Program tidak ditemukan' });
     }
 
     const program = results[0];
 
-    // Hitung Persentase
+    // Hitung persentase
     const target = parseFloat(program.target_donasi);
     const terkumpul = parseFloat(program.total_terkumpul);
     const persentase = target > 0 ? Math.round((terkumpul / target) * 100) : 0;
 
-    // Hitung Sisa Hari
+    // Hitung sisa hari
     const today = new Date();
     const endDate = new Date(program.tgl_berakhir);
     const selisihMs = endDate - today;
@@ -268,7 +279,10 @@ router.get('/:id_program', (req, res) => {
     };
 
     res.json(detailProgram);
-  });
+  } catch (err) {
+    console.error('Error saat mengambil detail program:', err);
+    res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
 });
 
 // Export router
