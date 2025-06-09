@@ -4,19 +4,46 @@ const db = require('../config/db');
 const kegiatan = require('../mildware/kegiatan');
 
 //Mengambil Semua Kegiatan
-router.get('/', (req, res) => {
-  const sql = `
-    SELECT p.*, k.judul_program 
-    FROM tbl_kegiatan p 
-    JOIN tbl_programdonasi k ON p.id_program = k.id_program
-    `;
+router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 6;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : `%`;
 
-  db.query(sql, (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(results);
-  });
+  try {
+    // Ambil data kegiatan + program berdasarkan pencarian dan paginasi
+    const [results] = await db.query(
+      `SELECT p.*, k.judul_program 
+       FROM tbl_kegiatan p 
+       JOIN tbl_programdonasi k ON p.id_program = k.id_program 
+       WHERE k.judul_program LIKE ? 
+       LIMIT ? OFFSET ?`,
+      [search, limit, offset]
+    );
+
+    // Hitung total data (tanpa limit)
+    const [countResult] = await db.query(
+      `SELECT COUNT(*) AS total 
+       FROM tbl_kegiatan p 
+       JOIN tbl_programdonasi k ON p.id_program = k.id_program 
+       WHERE k.judul_program LIKE ?`,
+      [search]
+    );
+
+    const total = countResult[0].total;
+    const totalPages = Math.ceil(total / limit);
+
+    // Kirim respons
+    res.json({
+      data: results,
+      currentPage: page,
+      totalData: total,
+      totalPages: totalPages,
+    });
+  } catch (error) {
+    console.error('Terjadi kesalahan saat mengambil data:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
 });
 
 //Tambah Kegiatan
