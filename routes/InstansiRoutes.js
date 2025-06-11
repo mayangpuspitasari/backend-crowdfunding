@@ -21,11 +21,22 @@ router.get('/profil', async (req, res) => {
     const [results] = await db.query(
       'SELECT deskripsi, visi, misi FROM tbl_instansi',
     );
-
     // Kirim data baris pertama (asumsi datanya hanya 1 instansi)
     res.json(results[0]);
   } catch (err) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+//Menampikan Struktur
+router.get('/struktur', async (req, res) => {
+  try {
+    const [results] = await db.query(
+      'SELECT struktur FROM tbl_instansi LIMIT 1',
+    );
+    res.json(results[0]); // Kirim 1 data sebagai objek
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -35,33 +46,30 @@ router.get('/footer', async (req, res) => {
     const [results] = await db.query(
       'SELECT alamat, kontak, email, fb, ig FROM tbl_instansi',
     );
-    res.json(results);
+    res.json(results[0]);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-  res.json(results);
 });
 
 //MENAMPILKAN logo INSTANSI
 router.get('/logo', async (req, res) => {
   try {
     const [results] = await db.query('SELECT logo FROM tbl_instansi');
-    res.json(results);
+    res.json(results[0]);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-  res.json(results);
 });
 
 //MENAMPILKAN rekening INSTANSI
 router.get('/rekening', async (req, res) => {
   try {
     const [results] = await db.query('SELECT rekening FROM tbl_instansi');
-    res.json(results);
+    res.json(results[0]);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-  res.json(results);
 });
 
 //update data instansi
