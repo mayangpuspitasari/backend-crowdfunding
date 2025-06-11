@@ -11,29 +11,29 @@ router.get('/', async (req, res) => {
   const search = req.query.search ? `%${req.query.search}%` : `%`;
 
   try {
-    // Ambil data kegiatan + program berdasarkan pencarian dan paginasi
+    // Ambil data kegiatan berdasarkan pencarian judul kegiatan
     const [results] = await db.query(
       `SELECT p.*, k.judul_program 
        FROM tbl_kegiatan p 
        JOIN tbl_programdonasi k ON p.id_program = k.id_program 
-       WHERE k.judul_program LIKE ? 
+       WHERE p.judul_kegiatan LIKE ? 
        LIMIT ? OFFSET ?`,
-      [search, limit, offset]
+      [search, limit, offset],
     );
 
-    // Hitung total data (tanpa limit)
+    // Hitung total data (untuk pagination)
     const [countResult] = await db.query(
       `SELECT COUNT(*) AS total 
        FROM tbl_kegiatan p 
        JOIN tbl_programdonasi k ON p.id_program = k.id_program 
-       WHERE k.judul_program LIKE ?`,
-      [search]
+       WHERE p.judul_kegiatan LIKE ?`,
+      [search],
     );
 
     const total = countResult[0].total;
     const totalPages = Math.ceil(total / limit);
 
-    // Kirim respons
+    // Kirim respons ke frontend
     res.json({
       data: results,
       currentPage: page,

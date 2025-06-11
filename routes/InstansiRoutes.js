@@ -5,13 +5,63 @@ const instansi = require('../mildware/instansi');
 const fs = require('fs');
 
 // Menampilkan semua data instansi
-router.get('/', (req, res) => {
-  db.query('SELECT * FROM tbl_instansi', (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+router.get('/', async (req, res) => {
+  try {
+    const [results] = await db.query('SELECT * FROM tbl_instansi');
     res.json(results);
-  });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+  res.json(results);
+});
+
+// Menmapilkan Profil Instansi
+router.get('/profil', async (req, res) => {
+  try {
+    const [results] = await db.query(
+      'SELECT deskripsi, visi, misi FROM tbl_instansi',
+    );
+
+    // Kirim data baris pertama (asumsi datanya hanya 1 instansi)
+    res.json(results[0]);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+//MENAMPILKAN FOOTER INSTANSI
+router.get('/footer', async (req, res) => {
+  try {
+    const [results] = await db.query(
+      'SELECT alamat, kontak, email, fb, ig FROM tbl_instansi',
+    );
+    res.json(results);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+  res.json(results);
+});
+
+//MENAMPILKAN logo INSTANSI
+router.get('/logo', async (req, res) => {
+  try {
+    const [results] = await db.query('SELECT logo FROM tbl_instansi');
+    res.json(results);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+  res.json(results);
+});
+
+//MENAMPILKAN rekening INSTANSI
+router.get('/rekening', async (req, res) => {
+  try {
+    const [results] = await db.query('SELECT rekening FROM tbl_instansi');
+    res.json(results);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+  res.json(results);
 });
 
 //update data instansi
