@@ -34,7 +34,17 @@ router.get('/struktur', async (req, res) => {
     const [results] = await db.query(
       'SELECT struktur FROM tbl_instansi LIMIT 1',
     );
-    res.json(results[0]); // Kirim 1 data sebagai objek
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Data struktur tidak ditemukan' });
+    }
+
+    const strukturFilename = results[0].struktur;
+    const strukturUrl = strukturFilename.startsWith('/instansi/')
+      ? strukturFilename
+      : `/instansi/${strukturFilename}`;
+    // tambahkan path folder
+
+    res.json({ struktur: strukturUrl }); // kirim path lengkap ke frontend
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -71,6 +81,80 @@ router.get('/rekening', async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+//Tambah Data Instansi
+router.post(
+  '/',
+  instansi.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'struktur', maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { deskripsi, visi, misi, alamat, kontak, email, fb, ig, rekening } =
+        req.body;
+
+      // Validasi input
+      if (!deskripsi || !visi || !misi || !alamat || !kontak || !email) {
+        return res.status(400).json({
+          error:
+            'Deskripsi, visi, misi, alamat, kontak, dan email wajib diisi.',
+        });
+      }
+
+      // Ambil nama file (jika diupload)
+      const logo = req.files?.logo
+        ? `/instansi/${req.files.logo[0].filename}`
+        : null;
+      const struktur = req.files?.struktur
+        ? `/instansi/${req.files.struktur[0].filename}`
+        : null;
+
+      // Simpan ke database
+      const sql = `
+        INSERT INTO tbl_instansi 
+        (deskripsi, visi, misi, alamat, kontak, email, fb, ig, rekening, logo, struktur) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const values = [
+        deskripsi,
+        visi,
+        misi,
+        alamat,
+        kontak,
+        email,
+        fb || null,
+        ig || null,
+        rekening || null,
+        logo,
+        struktur,
+      ];
+
+      db.query(sql, values, (err, result) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res
+            .status(500)
+            .json({ error: 'Gagal menyimpan data instansi' });
+        }
+
+        res.status(201).json({
+          message: 'Data instansi berhasil ditambahkan',
+          data: {
+            id: result.insertId,
+            ...req.body,
+            logo,
+            struktur,
+          },
+        });
+      });
+    } catch (err) {
+      console.error('Upload error:', err.message);
+      return res.status(500).json({ error: 'Terjadi kesalahan server' });
+    }
+  },
+);
 
 //update data instansi
 router.put(

@@ -23,6 +23,7 @@ const fileFilter = (req, file, cb) => {
 const instansi = multer({
   storage,
   fileFilter,
+  limits: { fileSize: 2 * 1024 * 1024 }, // maksimal 2MB
 });
 
 module.exports = instansi;
