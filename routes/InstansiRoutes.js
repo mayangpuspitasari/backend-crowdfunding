@@ -65,10 +65,20 @@ router.get('/footer', async (req, res) => {
 //MENAMPILKAN logo INSTANSI
 router.get('/logo', async (req, res) => {
   try {
-    const [results] = await db.query('SELECT logo FROM tbl_instansi');
-    res.json(results[0]);
+    const [results] = await db.query('SELECT logo FROM tbl_instansi LIMIT 1');
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Data logo tidak ditemukan' });
+    }
+
+    const logoFilename = results[0].logo;
+    const logoUrl = logoFilename.startsWith('/instansi/')
+      ? logoFilename
+      : `/instansi/${logoFilename}`;
+    // tambahkan path folder
+
+    res.json({ logo: logoUrl }); // kirim path lengkap ke frontend
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 

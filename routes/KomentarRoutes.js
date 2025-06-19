@@ -24,58 +24,85 @@ router.get('/', (req, res) => {
   });
 });
 
-//Buat Komentar
-router.post('/', (req, res) => {
+// GET Komentar berdasarkan id_program
+router.get('/komentar/:id_program', async (req, res) => {
+  const { id_program } = req.params;
+
+  const sql = `
+    SELECT 
+      k.id_komentar,
+      u.nama AS nama_user,
+      p.judul_program,
+      k.komentar,
+      k.tanggal_komentar
+    FROM tbl_komentar k
+    JOIN tbl_user u ON k.id_user = u.id_user
+    JOIN tbl_programdonasi p ON k.id_program = p.id_program
+    WHERE k.id_program = ?
+    ORDER BY k.tanggal_komentar DESC
+  `;
+
+  try {
+    const [results] = await db.query(sql, [id_program]);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST Komentar
+router.post('/', async (req, res) => {
   const { id_user, id_program, komentar } = req.body;
   const tanggal_komentar = new Date();
 
   const sql = `
-        INSERT INTO tbl_komentar (id_user, id_program, komentar, tannggal_komentar) 
-        VALUES (?, ?, ?, ?)
-    `;
+    INSERT INTO tbl_komentar (id_user, id_program, komentar, tanggal_komentar)
+    VALUES (?, ?, ?, ?)
+  `;
 
-  db.query(
-    sql,
-    [id_user, id_program, komentar, tanggal_komentar],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res
-        .status(201)
-        .json({
-          message: 'Komentar berhasil ditambahkan',
-          id_komentar: result.insertId,
-        });
-    },
-  );
+  try {
+    const [result] = await db.query(sql, [
+      id_user,
+      id_program,
+      komentar,
+      tanggal_komentar,
+    ]);
+
+    res.status(201).json({
+      message: 'Komentar berhasil ditambahkan',
+      id_komentar: result.insertId,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-//AMbil Komentar Berdasarkan Program Donasi
-router.get('/program/:id_program', (req, res) => {
-  const { id_program } = req.params;
+// //Buat Komentar
+// router.post('/', (req, res) => {
+//   const { id_user, id_program, komentar } = req.body;
+//   const tanggal_komentar = new Date();
 
-  const sql = `
-        SELECT 
-            k.id_komentar,
-            u.nama AS nama_user,
-            p.judul_program,
-            k.komentar,
-            k.tannggal_komentar
-        FROM tbl_komentar k
-        JOIN tbl_user u ON k.id_user = u.id_user
-        JOIN tbl_programdonasi p ON k.id_program = p.id_program
-        WHERE k.id_program = ?
-        ORDER BY k.tannggal_komentar DESC
-    `;
+//   const sql = `
+//         INSERT INTO tbl_komentar (id_user, id_program, komentar, tannggal_komentar)
+//         VALUES (?, ?, ?, ?)
+//     `;
 
-  db.query(sql, [id_program], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(results);
-  });
-});
+//   db.query(
+//     sql,
+//     [id_user, id_program, komentar, tanggal_komentar],
+//     (err, result) => {
+//       if (err) {
+//         return res.status(500).json({ error: err.message });
+//       }
+//       res
+//         .status(201)
+//         .json({
+//           message: 'Komentar berhasil ditambahkan',
+//           id_komentar: result.insertId,
+//         });
+//     },
+//   );
+// });
 
 //Hapus Komentar
 router.delete('/:id_komentar', (req, res) => {
