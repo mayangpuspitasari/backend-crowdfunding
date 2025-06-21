@@ -4,18 +4,37 @@ const db = require('../config/db');
 const bukti = require('../mildware/bukti');
 
 //Mengambil Semua Donasi
-router.get('/', (req, res) => {
-  const sql = `SELECT d.*, u.nama, p.judul_program  
-               FROM tbl_donasi d 
-               JOIN tbl_user u ON d.id_user = u.id_user 
-               JOIN tbl_programdonasi p ON d.id_program = p.id_program`;
+router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 6;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : '%';
 
-  db.query(sql, (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(results);
-  });
+  try {
+    const [results] = await db.query(
+      `SELECT * FROM tbl_donasi
+       WHERE nama LIKE ?
+       ORDER BY id_user DESC
+       LIMIT ? OFFSET ?`,
+      [search, limit, offset],
+    );
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) as total FROM tbl_donasi
+       WHERE nama LIKE ?`,
+      [search],
+    );
+
+    res.json({
+      data: results,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (err) {
+    console.error('Query Error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 //Tambah Donasi
@@ -118,14 +137,17 @@ router.put('/verifikasi_berhasil/:id_donasi', (req, res) => {
           db.query(updateProgramSql, params, (err4) => {
             if (err4) return res.status(500).send(err4);
 
-            res.status(200).send('Donasi berhasil diverifikasi dan total program diperbarui');
+            res
+              .status(200)
+              .send(
+                'Donasi berhasil diverifikasi dan total program diperbarui',
+              );
           });
         },
       );
     });
   });
 });
-
 
 //Verifikasi Donasi Gagal
 router.put('/verifikasi_gagal/:id_donasi', (req, res) => {
