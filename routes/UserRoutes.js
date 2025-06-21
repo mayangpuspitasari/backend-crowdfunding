@@ -1,26 +1,44 @@
-// const express = require('express');
-// const router = express.Router();
-// const db = require ('../coonfig/db');
+const express = require('express');
+const router = express.Router();
+const db = require('../config/db');
 
-// // Menampilkan semua data pengguna
-// router.get('/', (req,res) => {
-//     const sql = "SELECT * FROM tbl_user WHERE role ='donatur' ";
-//     db.query(sql,(err,results) => {
-//         if (err) => {
-//             return res.status(500).send(err);
-//         }
-//         res.status(200).json(results);
-//     });
-    
-// });
+// Menampilkan semua data pengguna
+router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 6;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : `%`;
 
-// //Registrasi User
+  try {
+    const [results] = await db.query(
+      `SELECT * FROM tbl_user WHERE role = 'donatur' AND nama LIKE ? LIMIT ? OFFSET ?`,
+      [search, limit, offset],
+    );
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) as total FROM tbl_user WHERE role = 'donatur' AND nama LIKE ?`,
+      [search],
+    );
+
+    res.json({
+      data: results,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (err) {
+    console.error('Query Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//Registrasi User
 // router.post('/register', (req,res) => {
 //     const {nama,email,password,no_hp}=req.body;
 
 //     //Validasi Input
 //     if(!nama || !email || !password || !no_hp) {
-//         .status(400).sen('Semuai Field Haruus Di Isi');
+//         res.status(400).sen('Semuai Field Haruus Di Isi');
 //     }
 
 //     if (role && role.toLowerCase() === 'admin') {
@@ -42,7 +60,6 @@
 //         //Hash Passwoed
 //         const hashPassword = await bcrypt.hash(password, 10);
 
-
 //         //simpan ke database;
 //         const sql = 'INSERT INTO tbl_user (nama,email,password,no_hp) VALUES (?, ?, ?, ?)';
 //         await db.promise().query(sql, [nama, email, hashPassword, no_hp]);
@@ -54,9 +71,9 @@
 //     }
 // });
 
-// // Login
+// Login
 
-// const SECRET_KEY = process.env.JWT_SECRET || 'rahasia';
+const SECRET_KEY = process.env.JWT_SECRET || 'rahasia';
 
 // router.post('/login', (req,res) => {
 //     const {email, password} = req.body;
@@ -67,7 +84,7 @@
 
 //     try {
 //         //cek apakah user ada di database
-//         cons sql = 'SELECT * FROM tbl_user WHERE email = ?';
+//         ContentVisibilityAutoStateChangeEvent sql = 'SELECT * FROM tbl_user WHERE email = ?';
 //         const [results] = await db.promise().query(sql, [email]);
 
 //         if (results.length > 0) {
@@ -99,3 +116,7 @@
 //     res.status(500).json({ message: 'Terjadi kesalahan server.' });
 //   }
 // })
+
+// Export router
+module.exports = router;
+

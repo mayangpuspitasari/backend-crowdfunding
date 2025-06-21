@@ -25,6 +25,10 @@ app.use('/program', express.static(path.join(__dirname, 'program')));
 app.use('/bukti', express.static(path.join(__dirname, 'bukti')));
 app.use('/kegiatan', express.static(path.join(__dirname, 'kegiatan')));
 
+// Rute untuk user
+const UserRoutes = require('./routes/UserRoutes');
+app.use('/user', UserRoutes);
+
 // Rute untuk instansi
 const InstansiRoutes = require('./routes/InstansiRoutes');
 app.use('/instansi', InstansiRoutes);

@@ -129,25 +129,31 @@ router.delete('/:id_kegiatan', (req, res) => {
 });
 
 //Detail Kegiatan
-router.get('/:id_kegiatan', (req, res) => {
+// GET detail kegiatan berdasarkan ID
+router.get('/:id_kegiatan', async (req, res) => {
   const { id_kegiatan } = req.params;
 
   const sql = `
     SELECT p.*, k.judul_program 
     FROM tbl_kegiatan p 
     JOIN tbl_programdonasi k ON p.id_program = k.id_program
-    `;
-  db.query(sql, [id_kegiatan], (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
+    WHERE p.id_kegiatan = ?
+  `;
+
+  try {
+    const [results] = await db.query(sql, [id_kegiatan]);
 
     if (results.length === 0) {
       return res.status(404).json({ message: 'Kegiatan tidak ditemukan' });
     }
 
-    res.status(200).json(results[0]); // kirim data kegiatan
-  });
+    res.status(200).json(results[0]);
+  } catch (err) {
+    console.error('Error mengambil data kegiatan:', err);
+    res
+      .status(500)
+      .json({ error: 'Terjadi kesalahan saat mengambil data kegiatan.' });
+  }
 });
 
 //export router

@@ -2,12 +2,36 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-//Mengambil semua kategori
+//Mengambil Semua Kategori
 router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 6;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : '%';
+
   try {
-    const [results] = await db.query('SELECT  * FROM tbl_kategori');
-    res.json(results);
+    const [results] = await db.query(
+      `SELECT * FROM tbl_kategori
+       WHERE jenis_kategori LIKE ?
+       ORDER BY id_kategori DESC
+       LIMIT ? OFFSET ?`,
+      [search, limit, offset],
+    );
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) as total FROM tbl_kategori
+       WHERE jenis_kategori LIKE ?`,
+      [search],
+    );
+
+    res.json({
+      data: results,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (err) {
+    console.error('Query Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -34,20 +58,22 @@ router.get('/:id_kategori', (req, res) => {
 });
 
 //Tambah Kategori
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { jenis_kategori } = req.body;
 
-  if (!jenis_kategori || jenis_kategori.trim() === '') {
-    return res.status(400).json({ error: 'jenis_kategori tidak boleh kosong' });
+  if (!jenis_kategori) {
+    return res.status(400).json({ message: 'Jenis kategori wajib diisi' });
   }
 
-  const sql = 'INSERT INTO tbl_kategori (jenis_kategori) VALUES (?)';
-  db.query(sql, [jenis_kategori], (err) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(201).json({ message: 'Kategori Berhasil Ditambahkan' });
-  });
+  try {
+    await db.query('INSERT INTO tbl_kategori (jenis_kategori) VALUES (?)', [
+      jenis_kategori,
+    ]);
+    res.status(201).json({ message: 'Kategori berhasil ditambahkan' });
+  } catch (err) {
+    console.error('Gagal insert:', err);
+    res.status(500).json({ message: 'Gagal menambahkan kategori' });
+  }
 });
 
 //Update Kategori
@@ -80,3 +106,4 @@ router.delete('/:id_kategori', (req, res) => {
 
 // Export router
 module.exports = router;
+

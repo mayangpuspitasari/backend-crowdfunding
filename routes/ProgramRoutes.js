@@ -49,6 +49,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+//ubah status donasi
+router.put('/:id_program/status', async (req, res) => {
+  const { id_program } = req.params;
+  const { status } = req.body;
+
+  try {
+    const [result] = await db.query(
+      `UPDATE tbl_programdonasi SET status = ? WHERE id_program = ?`,
+      [status, id_program]
+    );
+
+    res.json({ success: true, message: 'Status berhasil diperbarui' });
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({ success: false, message: 'Gagal update status' });
+  }
+});
+
+
 //Tambah program
 router.post('/', program.single('gambar'), (req, res) => {
   const {
