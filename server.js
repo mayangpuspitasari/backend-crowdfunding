@@ -11,11 +11,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 
 // Dummy test
 app.get('/', (req, res) => res.send('API is running'));
@@ -35,7 +37,9 @@ app.use('/kegiatan', require('./routes/KegiatanRoutes'));
 app.use('/donasi', require('./routes/DonasiRoutes'));
 app.use('/laporan', require('./routes/LaporanRoutes'));
 app.use('/download', require('./routes/DownloadRoutes'));
+app.use('/komentar', require('./routes/KomentarRoutes'));
 
 // Jalankan server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
