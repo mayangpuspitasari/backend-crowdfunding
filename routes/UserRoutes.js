@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const router = express.Router();
 const db = require('../config/db');
 
-
 // Menampilkan semua data pengguna
 router.get('/', async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -81,10 +80,11 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password,role } = req.body;
 
   try {
-    const [users] = await db.query('SELECT * FROM tbl_user WHERE email = ?', [email]);
+   const [users] = await db.query('SELECT * FROM tbl_user WHERE email = ? AND role = ?', [email, role]);
+
     const user = users[0];
 
     if (!user) {
@@ -92,26 +92,25 @@ router.post('/login', async (req, res) => {
     }
 
     console.log('Email input:', email);
-console.log('Password input:', password);
-console.log('Password from DB:', user.password);
-
+    console.log('Password input:', password);
+    console.log('Password from DB:', user.password);
 
     const isMatch = await bcrypt.compare(password, user.password);
-console.log('Password match result:', isMatch);
+    console.log('Password match result:', isMatch);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Password salah' });
     }
 
     const token = jwt.sign(
-  {
-    id: user.id_user,
-    email: user.email,
-    role: user.role,
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: '2h' }
-);
+      {
+        id: user.id_user,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' },
+    );
 
     res.json({
       token,
