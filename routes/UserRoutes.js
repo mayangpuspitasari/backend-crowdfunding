@@ -126,6 +126,40 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Terjadi kesalahan server' });
   }
 });
+
+// Update user
+router.put('/:id_user', async (req, res) => {
+  const { id_user } = req.params;
+  const { nama, no_hp } = req.body;
+
+  const sql =
+    'UPDATE tbl_user SET nama = ?, no_hp = ? WHERE id_user = ?';
+
+  try {
+    await db.query(sql, [nama, no_hp, id_user]);
+    res.status(200).json({ message: 'User Berhasil Diedit' });
+  } catch (err) {
+    console.error('Gagal Edit:', err);
+    res.status(500).json({ message: 'Gagal Edit user' });
+  }
+});
+
+
+// Hapus user
+router.delete('/:id_user', async (req, res) => {
+  const { id_user } = req.params;
+
+  const sql = 'DELETE FROM tbl_user WHERE id_user = ?';
+
+  try {
+    await db.query(sql, [id_user]);
+    res.status(200).send('User Berhasil Dihapus');
+  } catch (err) {
+    console.error('Gagal Hapus:', err);
+    res.status(500).json({ message: 'Gagal Hapus user' });
+  }
+});
+
 // Export router
 module.exports = router;
 
