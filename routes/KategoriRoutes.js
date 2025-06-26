@@ -76,33 +76,38 @@ router.post('/', async (req, res) => {
   }
 });
 
-//Update Kategori
-router.put('/:id_kategori', (req, res) => {
+// Update Kategori
+router.put('/:id_kategori', async (req, res) => {
   const { id_kategori } = req.params;
   const { jenis_kategori } = req.body;
 
   const sql =
     'UPDATE tbl_kategori SET jenis_kategori = ? WHERE id_kategori = ?';
-  db.query(sql, [jenis_kategori, id_kategori], (err) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(200).send('Kategori Berhasil Diupdate');
-  });
+
+  try {
+    await db.query(sql, [jenis_kategori, id_kategori]);
+    res.status(201).json({ message: 'Kategori Berhasil Diedit' });
+  } catch (err) {
+    console.error('Gagal Edit:', err);
+    res.status(500).json({ message: 'Gagal Edit Kategori' });
+  }
 });
 
-//Hapus Kategori
-router.delete('/:id_kategori', (req, res) => {
+// Hapus Kategori
+router.delete('/:id_kategori', async (req, res) => {
   const { id_kategori } = req.params;
 
-  const sql = ' DELETE FROM tbl_kategori WHERE id_kategori = ?';
-  db.query(sql, [id_kategori], (err) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
+  const sql = 'DELETE FROM tbl_kategori WHERE id_kategori = ?';
+
+  try {
+    await db.query(sql, [id_kategori]);
     res.status(200).send('Kategori Berhasil Dihapus');
-  });
+  } catch (err) {
+    console.error('Gagal Hapus:', err);
+    res.status(500).json({ message: 'Gagal Hapus Kategori' });
+  }
 });
+
 
 // Export router
 module.exports = router;

@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
 
   try {
     const [results] = await db.query(
-      `SELECT * FROM tbl_user WHERE role = 'donatur' AND nama LIKE ? LIMIT ? OFFSET ?`,
+      `SELECT * FROM tbl_user WHERE role = 'donatur' AND nama LIKE ? ORDER BY id_user DESC LIMIT ? OFFSET ?`,
       [search, limit, offset],
     );
 

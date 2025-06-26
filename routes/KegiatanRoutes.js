@@ -17,6 +17,7 @@ router.get('/', async (req, res) => {
        FROM tbl_kegiatan p 
        JOIN tbl_programdonasi k ON p.id_program = k.id_program 
        WHERE p.judul_kegiatan LIKE ? 
+       ORDER BY p.id_kegiatan DESC
        LIMIT ? OFFSET ?`,
       [search, limit, offset],
     );

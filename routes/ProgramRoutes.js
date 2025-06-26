@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
   const search = req.query.search ? `%${req.query.search}%` : '%';
 
   try {
-    // Ambil data sesuai pencarian + pagination
+    // Ambil data terbaru ke terlama
     const [results] = await db.query(
       `
       SELECT 
@@ -21,12 +21,12 @@ router.get('/', async (req, res) => {
       FROM tbl_programdonasi p
       JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
       WHERE p.judul_program LIKE ?
+      ORDER BY p.id_program DESC
       LIMIT ? OFFSET ?
     `,
       [search, limit, offset],
     );
 
-    // Hitung total hasil pencarian (tanpa limit-offset)
     const [[{ total }]] = await db.query(
       `
       SELECT COUNT(*) as total 
@@ -49,6 +49,7 @@ router.get('/', async (req, res) => {
   }
 });
 
+
 //ubah status donasi
 router.put('/:id_program/status', async (req, res) => {
   const { id_program } = req.params;
@@ -68,75 +69,80 @@ router.put('/:id_program/status', async (req, res) => {
 });
 
 
-//Tambah program
-router.post('/', program.single('gambar'), (req, res) => {
+
+// Tambah program
+router.post('/', program.single('gambar'), async (req, res) => {
   const {
     judul_program,
     deskripsi,
     id_kategori,
     tgl_mulai,
     tgl_berakhir,
-    jumlah_donatur,
     target_donasi,
-    total_terkumpul,
     status,
   } = req.body;
+
   const gambar = req.file ? `/program/${req.file.filename}` : null;
 
-  //vALIDASI FIELD
+  // Validasi field yang wajib diisi
   const validasiFields = [
     'judul_program',
     'deskripsi',
     'id_kategori',
     'tgl_mulai',
     'tgl_berakhir',
-    'jumlah_donatur',
     'target_donasi',
-    'total_terkumpul',
     'status',
   ];
 
   for (const field of validasiFields) {
     const value = req.body[field];
-
-    //ubah semua jadi string dulu baru di-trim
     if (!value || String(value).trim() === '') {
       return res.status(400).send({ error: `${field} Tidak Boleh Kosong` });
     }
   }
 
-  //Validasi Gambar File
+  // Validasi gambar
   if (!req.file) {
     return res.status(400).send({ error: 'Gambar Tidak Boleh Kosong' });
   }
 
-  const sql =
-    'INSERT INTO tbl_programdonasi (gambar, judul_program, deskripsi, id_kategori, tgl_mulai, tgl_berakhir, jumlah_donatur, target_donasi, total_terkumpul, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(
-    sql,
-    [
+  // Nilai default
+  const jumlah_donatur = 0;
+  const total_terkumpul = 0;
+
+  const sql = `
+    INSERT INTO tbl_programdonasi (
+      gambar, judul_program, deskripsi, id_kategori,
+      tgl_mulai, tgl_berakhir, jumlah_donatur,
+      target_donasi, total_terkumpul, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  try {
+    await db.query(sql, [
       gambar,
       judul_program,
       deskripsi,
       id_kategori,
       tgl_mulai,
       tgl_berakhir,
-      jumlah_donatur,
+      jumlah_donatur, // <-- default 0
       target_donasi,
-      total_terkumpul,
+      total_terkumpul, // <-- default 0
       status,
-    ],
-    (err) => {
-      if (err) {
-        return res.status(500).send(err); // Mengirimkan respons error dan menghentikan eksekusi
-      }
-      res.status(201).send('Program Berhasil Ditambahkan'); // Respons sukses
-    },
-  );
+    ]);
+
+    res.status(201).json({ message: 'Program berhasil ditambahkan' });
+  } catch (err) {
+    console.error('Gagal insert:', err);
+    res.status(500).json({ message: 'Gagal menambahkan Program' });
+  }
 });
 
-//Update program
-router.put('/:id_program', program.single('gambar'), (req, res) => {
+
+// Update program
+router.put('/:id_program', program.single('gambar'), async (req, res) => {
   const { id_program } = req.params;
   const {
     judul_program,
@@ -144,51 +150,85 @@ router.put('/:id_program', program.single('gambar'), (req, res) => {
     id_kategori,
     tgl_mulai,
     tgl_berakhir,
-    jumlah_donatur,
     target_donasi,
-    total_terkumpul,
     status,
   } = req.body;
 
-  const gambar = req.file ? `/program/${req.file.filename}` : null;
+  // Validasi field yang wajib diisi
+  const validasiFields = [
+    'judul_program',
+    'deskripsi',
+    'id_kategori',
+    'tgl_mulai',
+    'tgl_berakhir',
+    'target_donasi',
+    'status',
+  ];
 
-  const sql =
-    'UPDATE tbl_programdonasi SET gambar = ?, judul_program = ?, deskripsi = ?, id_kategori = ?, tgl_mulai = ?, tgl_berakhir = ?, jumlah_donatur = ?, target_donasi = ?, total_terkumpul = ?, status = ? WHERE id_program = ?';
-  db.query(
-    sql,
-    [
+  for (const field of validasiFields) {
+    const value = req.body[field];
+    if (!value || String(value).trim() === '') {
+      return res.status(400).json({ error: `${field} tidak boleh kosong` });
+    }
+  }
+
+  try {
+    // Ambil data lama untuk gambar jika tidak ada gambar baru
+    const [oldData] = await db.query('SELECT gambar FROM tbl_programdonasi WHERE id_program = ?', [id_program]);
+
+    if (oldData.length === 0) {
+      return res.status(404).json({ error: 'Program tidak ditemukan' });
+    }
+
+    const gambar = req.file ? `/program/${req.file.filename}` : oldData[0].gambar;
+
+    const sql = `
+      UPDATE tbl_programdonasi
+      SET
+        gambar = ?,
+        judul_program = ?,
+        deskripsi = ?,
+        id_kategori = ?,
+        tgl_mulai = ?,
+        tgl_berakhir = ?,
+        target_donasi = ?,
+        status = ?
+      WHERE id_program = ?
+    `;
+
+    await db.query(sql, [
       gambar,
       judul_program,
       deskripsi,
       id_kategori,
       tgl_mulai,
       tgl_berakhir,
-      jumlah_donatur,
       target_donasi,
-      total_terkumpul,
       status,
       id_program,
-    ],
-    (err) => {
-      if (err) {
-        return res.status(500).send(err); // Mengirimkan respons error dan menghentikan eksekusi
-      }
-      res.status(200).send('Program Berhasil Diupdate'); // Respons sukses
-    },
-  );
+    ]);
+
+    res.status(200).json({ message: 'Program berhasil diupdate' });
+  } catch (err) {
+    console.error('Gagal update program:', err);
+    res.status(500).json({ error: 'Gagal update program' });
+  }
 });
 
+
+
 //hapus program
-router.delete('/:id_program', (req, res) => {
+router.delete('/:id_program', async (req, res) => {
   const { id_program } = req.params;
 
   const sql = 'DELETE FROM tbl_programdonasi WHERE id_program = ?';
-  db.query(sql, [id_program], (err) => {
-    if (err) {
-      return res.status(500).send(err); // Mengirimkan respons error dan menghentikan eksekusi
-    }
-    res.status(200).send('Program Berhasil Dihapus'); // Respons sukses
-  });
+  try {
+    await db.query(sql, [id_program]);
+    res.status(200).send('Program Berhasil Dihapus');
+  } catch (err) {
+    console.error('Gagal Hapus:', err);
+    res.status(500).json({ message: 'Gagal Hapus Program' });
+  }
 });
 
 // Route untuk 3 program terbaru
