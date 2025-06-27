@@ -6,7 +6,7 @@ const kegiatan = require('../mildware/kegiatan');
 //Mengambil Semua Kegiatan
 router.get('/', async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 6;
+  const limit = parseInt(req.query.limit) || 4;
   const offset = (page - 1) * limit;
   const search = req.query.search ? `%${req.query.search}%` : `%`;
 
