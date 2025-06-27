@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
 });
 
 //Tambah Kegiatan
-router.post('/', kegiatan.single('gambar'), (req, res) => {
+router.post('/', kegiatan.single('gambar'), async (req, res) => {
   const { id_program, judul_kegiatan, deskripsi, tanggal_kegiatan } = req.body;
   const gambar = req.file ? `/kegiatan/${req.file.filename}` : null;
 
@@ -60,12 +60,10 @@ router.post('/', kegiatan.single('gambar'), (req, res) => {
     'tanggal_kegiatan',
   ];
 
-  for (const fields of validasiFields) {
-    const value = req.body[fields];
-
-    //ubah semua jadi string dulu baru di-trim
-    if (!value || String(fields).trim() === '') {
-      return res.status(400).json({ error: `${fields} Tidak Boleh Kosong` });
+  for (const field of validasiFields) {
+    const value = req.body[field];
+    if (!value || String(value).trim() === '') {
+      return res.status(400).json({ error: `${field} Tidak Boleh Kosong` });
     }
   }
 
@@ -76,20 +74,23 @@ router.post('/', kegiatan.single('gambar'), (req, res) => {
 
   const sql =
     ' INSERT INTO tbl_kegiatan (gambar,id_program,judul_kegiatan,deskripsi,tanggal_kegiatan) VALUES (?, ?, ?, ?, ?)';
-  db.query(
-    sql,
-    [gambar, id_program, judul_kegiatan, deskripsi, tanggal_kegiatan],
-    (err) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      res.status(200).send('Kegiatan Berhasil Di Tambahkan');
-    },
-  );
+  try {
+    await db.query(sql, [
+      gambar,
+      id_program,
+      judul_kegiatan,
+      deskripsi,
+      tanggal_kegiatan,
+    ]);
+    res.status(201).json({ message: 'Kegiatan Berhasil Ditambahkan' });
+  } catch (error) {
+    console.error('Terjadi kesalahan saat menambahkan kegiatan:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
 });
 
 //Update Kegiatan
-router.put('/:id_kegiatan', kegiatan.single('gambar'), (req, res) => {
+router.put('/:id_kegiatan', kegiatan.single('gambar'), async (req, res) => {
   const { id_kegiatan } = req.params;
   const { id_program, judul_kegiatan, deskripsi, tanggal_kegiatan } = req.body;
 
@@ -97,39 +98,36 @@ router.put('/:id_kegiatan', kegiatan.single('gambar'), (req, res) => {
 
   const sql =
     ' UPDATE tbl_kegiatan SET gambar = ?, id_program = ?, judul_kegiatan = ?, deskripsi = ?, tanggal_kegiatan = ? WHERE id_kegiatan = ?';
-  db.query(
-    sql,
-    [
+  try {
+    await db.query(sql, [
       gambar,
       id_program,
       judul_kegiatan,
       deskripsi,
       tanggal_kegiatan,
       id_kegiatan,
-    ],
-    (err) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      res.status(200).send('Kegiatan Berhasil Di Update');
-    },
-  );
+    ]);
+    res.status(200).json({ message: 'Kegiatan Berhasil Diedit' });
+  } catch (error) {
+    console.error('Terjadi kesalahan saat mengupdate kegiatan:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
 });
 
 //Hapus Kegiatan
-router.delete('/:id_kegiatan', (req, res) => {
+router.delete('/:id_kegiatan', async (req, res) => {
   const { id_kegiatan } = req.params;
 
   const sql = ' DELETE FROM tbl_kegiatan WHERE id_kegiatan = ?';
-  db.query(sql, [id_kegiatan], (err) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(200).send('Kegiatan Berhasil Dihapus');
-  });
+  try {
+    await db.query(sql, [id_kegiatan]);
+    res.status(200).json({ message: 'Kegiatan Berhasil Dihapus' });
+  } catch (error) {
+    console.error('Terjadi kesalahan saat menghapus kegiatan:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
 });
 
-//Detail Kegiatan
 // GET detail kegiatan berdasarkan ID
 router.get('/:id_kegiatan', async (req, res) => {
   const { id_kegiatan } = req.params;
