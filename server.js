@@ -27,6 +27,7 @@ app.use('/instansi', express.static(path.join(__dirname, 'instansi')));
 app.use('/program', express.static(path.join(__dirname, 'program')));
 app.use('/bukti', express.static(path.join(__dirname, 'bukti')));
 app.use('/kegiatan', express.static(path.join(__dirname, 'kegiatan')));
+app.use('/profil', express.static(path.join(__dirname, 'profil')));
 
 // Routes
 app.use('/user', require('./routes/UserRoutes'));

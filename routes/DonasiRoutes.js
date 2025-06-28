@@ -181,7 +181,7 @@ router.get('/:id_donasi', (req, res) => {
 });
 
 // GET Riwayat Donasi User
-router.get('/user/:id_user', (req, res) => {
+router.get('/user/:id_user', async (req, res) => {
   const { id_user } = req.params;
 
   const sql = `
@@ -201,14 +201,22 @@ router.get('/user/:id_user', (req, res) => {
       d.tanggal_donasi DESC
   `;
 
-  db.query(sql, [id_user], (err, results) => {
-    if (err) {
+  try {
+    const [results] = await db.query(sql, [id_user]);
+
+    if (results.length === 0) {
       return res
-        .status(500)
-        .json({ error: 'Gagal mengambil riwayat donasi', detail: err });
+        .status(404)
+        .json({ message: 'Tidak ada riwayat donasi ditemukan' });
     }
+
     res.status(200).json(results);
-  });
+  } catch (err) {
+    console.error('Gagal mengambil riwayat donasi:', err);
+    res
+      .status(500)
+      .json({ error: 'Gagal mengambil riwayat donasi', detail: err });
+  }
 });
 
 //Hapus Donasi

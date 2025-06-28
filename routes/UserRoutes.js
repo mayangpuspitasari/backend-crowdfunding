@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const router = express.Router();
 const db = require('../config/db');
+const verifyToken = require('../mildware/verifyToken');
+const profil = require('../mildware/profil');
 
 // Menampilkan semua data pengguna
 router.get('/', async (req, res) => {
@@ -31,6 +33,70 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Query Error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET profil user yang sedang login
+router.get('/profile', verifyToken, async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const [results] = await db.query(
+      'SELECT * FROM tbl_user WHERE id_user = ?',
+      [userId],
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+
+    res.json(results[0]);
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+//update profil
+router.put('/profile', verifyToken, profil.single('foto'), async (req, res) => {
+  const userId = req.user.id;
+  const { nama, email, password, no_hp } = req.body;
+  const foto = req.file ? `/profil/${req.file.filename}` : null;
+
+  try {
+    const [oldUser] = await db.query(
+      'SELECT * FROM tbl_user WHERE id_user = ?',
+      [userId],
+    );
+
+    if (!oldUser.length) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+
+    // Jika password kosong, gunakan password lama
+    const updatedPassword = password
+      ? await bcrypt.hash(password, 10)
+      : oldUser[0].password;
+
+    const sql = `
+      UPDATE tbl_user
+      SET nama = ?, email = ?, password = ?, no_hp = ?, foto = ?
+      WHERE id_user = ?
+    `;
+
+    await db.query(sql, [
+      nama || oldUser[0].nama,
+      email || oldUser[0].email,
+      updatedPassword,
+      no_hp || oldUser[0].no_hp,
+      foto || oldUser[0].foto,
+      userId,
+    ]);
+
+    res.status(200).json({ message: 'Profil berhasil diperbarui' });
+  } catch (error) {
+    console.error('Gagal update profil:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
   }
 });
 
@@ -80,10 +146,13 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-  const { email, password,role } = req.body;
+  const { email, password, role } = req.body;
 
   try {
-   const [users] = await db.query('SELECT * FROM tbl_user WHERE email = ? AND role = ?', [email, role]);
+    const [users] = await db.query(
+      'SELECT * FROM tbl_user WHERE email = ? AND role = ?',
+      [email, role],
+    );
 
     const user = users[0];
 
@@ -132,8 +201,7 @@ router.put('/:id_user', async (req, res) => {
   const { id_user } = req.params;
   const { nama, no_hp } = req.body;
 
-  const sql =
-    'UPDATE tbl_user SET nama = ?, no_hp = ? WHERE id_user = ?';
+  const sql = 'UPDATE tbl_user SET nama = ?, no_hp = ? WHERE id_user = ?';
 
   try {
     await db.query(sql, [nama, no_hp, id_user]);
@@ -143,7 +211,6 @@ router.put('/:id_user', async (req, res) => {
     res.status(500).json({ message: 'Gagal Edit user' });
   }
 });
-
 
 // Hapus user
 router.delete('/:id_user', async (req, res) => {
