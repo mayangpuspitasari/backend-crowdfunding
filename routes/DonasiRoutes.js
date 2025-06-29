@@ -38,54 +38,41 @@ router.get('/', async (req, res) => {
 });
 
 //Tambah Donasi
-router.post('/', bukti.single('bukti_pembayaran'), (req, res) => {
+router.post('/', bukti.single('bukti_pembayaran'), async (req, res) => {
   const { id_user, jumlah_donasi, dukungan, id_program, anonymous } = req.body;
   const bukti_pembayaran = req.file ? `/bukti/${req.file.filename}` : null;
 
-  // Validasi Fields
-  const validasiFields = ['id_user', 'jumlah_donasi', 'id_program'];
-
-  for (const field of validasiFields) {
-    const value = req.body[field];
-    if (!value || String(value).trim() === '') {
-      return res.status(400).json({ error: `${field} Tidak Boleh Kosong` });
-    }
+  if (!id_user || !jumlah_donasi || !id_program || !req.file) {
+    return res.status(400).json({ error: 'Semua field wajib diisi' });
   }
 
-  // Validasi Jumlah Donasi
   if (Number(jumlah_donasi) <= 0) {
-    return res.status(400).json({ error: 'Jumlah Donasi Harus Lebih Dari 0' });
+    return res.status(400).json({ error: 'Jumlah Donasi Harus > 0' });
   }
 
-  // Validasi Gambar
-  if (!req.file) {
-    return res.status(400).json({ error: 'Bukti Pembayaran Wajib Diisi' });
-  }
+  try {
+    const sql = `
+      INSERT INTO tbl_donasi (
+        bukti_pembayaran, id_user, jumlah_donasi,
+        tanggal_donasi, dukungan, id_program,
+        anonymous, verifikasi, status_donasi
+      ) VALUES (?, ?, ?, NOW(), ?, ?, ?, 0, 'menunggu')
+    `;
 
-  const sql = `
-    INSERT INTO tbl_donasi (
-      bukti_pembayaran, id_user, jumlah_donasi,
-      tanggal_donasi, dukungan, id_program,
-      anonymous, verifikasi, status_donasi
-    ) VALUES (?, ?, ?, NOW(), ?, ?, ?, 0, 'menunggu')`;
-
-  db.query(
-    sql,
-    [
+    await db.query(sql, [
       bukti_pembayaran,
       id_user,
       jumlah_donasi,
       dukungan || null,
       id_program,
       anonymous ? 1 : 0,
-    ],
-    (err) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      res.status(200).send('Donasi Berhasil Ditambahkan');
-    },
-  );
+    ]);
+
+    res.status(200).json({ message: 'Donasi Berhasil Ditambahkan' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal menyimpan donasi' });
+  }
 });
 
 //Verifikasi Donasi Berhasil
@@ -181,7 +168,7 @@ router.get('/:id_donasi', (req, res) => {
 });
 
 // GET Riwayat Donasi User
-router.get('/user/:id_user', async (req, res) => {
+router.get('/riwayat/:id_user', async (req, res) => {
   const { id_user } = req.params;
 
   const sql = `
@@ -204,13 +191,7 @@ router.get('/user/:id_user', async (req, res) => {
   try {
     const [results] = await db.query(sql, [id_user]);
 
-    if (results.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'Tidak ada riwayat donasi ditemukan' });
-    }
-
-    res.status(200).json(results);
+    res.status(200).json(results); // kirim tetap array meskipun kosong
   } catch (err) {
     console.error('Gagal mengambil riwayat donasi:', err);
     res
