@@ -150,7 +150,7 @@ router.put('/verifikasi_gagal/:id_donasi', (req, res) => {
 });
 
 //Detail Donasi
-router.get('/:id_donasi', (req, res) => {
+router.get('/:id_donasi', async (req, res) => {
   const { id_donasi } = req.params;
 
   const sql = `SELECT d.*, u.nama, p.judul_program 
@@ -201,16 +201,17 @@ router.get('/riwayat/:id_user', async (req, res) => {
 });
 
 //Hapus Donasi
-router.delete('/:id_donasi', (req, res) => {
+router.delete('/:id_donasi', async (req, res) => {
   const { id_donasi } = req.params;
   const sql = ' DELETE FROM tbl_donasi WHERE id_donasi = ?';
 
-  db.query(sql, [id_donasi], (err) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(200).send('Donasi Berhasil Dihapus');
-  });
+  try {
+    await db.query(sql, [id_donasi]);
+    res.status(200).json({message: 'Donasi Berhasil Dihapus'});
+  }catch (error) {
+    console.error('Terjadi Kesalahan saat menghapus Donasi', error);
+    res.status(500).json({message: 'Terjadi Kesalahan Server'});
+  }
 });
 
 //export module

@@ -81,15 +81,17 @@ router.post('/', async (req, res) => {
 });
 
 //Hapus Komentar
-router.delete('/:id_komentar', (req, res) => {
+router.delete('/:id_komentar', async (req, res) => {
   const { id_komentar } = req.params;
-  const sql = 'DELETE FROM tbl_komentar WHERE id_komentar = ?';
-  db.query(sql, [id_komentar], (err) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(200).send('KOmentar Berhasil Dihapus');
-  });
+
+  const sql = ' DELETE FROM tbl_komentar WHERE id_komentar = ?';
+  try {
+    await db.query(sql, [id_komentar]);
+    res.status(200).json({ message: 'Komentar Berhasil Dihapus' });
+  } catch (error) {
+    console.error('Terjadi kesalahan saat menghapus Komentar:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
 });
 
 //export module
