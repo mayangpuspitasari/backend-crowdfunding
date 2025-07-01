@@ -8,11 +8,10 @@ const fs = require('fs');
 router.get('/', async (req, res) => {
   try {
     const [results] = await db.query('SELECT * FROM tbl_instansi');
-    res.json(results);
+    res.json(results); // cukup satu ini
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-  res.json(results);
 });
 
 // Menmapilkan Profil Instansi
@@ -173,29 +172,34 @@ router.put(
     { name: 'logo', maxCount: 1 },
     { name: 'struktur', maxCount: 1 },
   ]),
-  (req, res) => {
+  async (req, res) => {
     const { id_instansi } = req.params;
     const { deskripsi, visi, misi, alamat, kontak, email, fb, ig, rekening } =
       req.body;
 
-    const logoBaru = req.files['logo'] ? req.files['logo'][0].filename : null;
-    const strukturBaru = req.files['struktur']
-      ? req.files['struktur'][0].filename
-      : null;
+    try {
+      const logoBaru = req.files['logo'] ? req.files['logo'][0].filename : null;
+      const strukturBaru = req.files['struktur']
+        ? req.files['struktur'][0].filename
+        : null;
 
-    // Ambil data lama dulu dari database
-    const getQuery =
-      'SELECT logo, struktur FROM tbl_instansi WHERE id_instansi = ?';
-    db.query(getQuery, [id_instansi], (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (results.length === 0)
+      // Ambil data lama
+      const [results] = await db.query(
+        'SELECT logo, struktur FROM tbl_instansi WHERE id_instansi = ?',
+        [id_instansi],
+      );
+
+      if (results.length === 0) {
         return res.status(404).json({ error: 'Instansi tidak ditemukan' });
+      }
 
       const instansiLama = results[0];
-      const finalLogo = logoBaru || instansiLama.logo;
-      const finalStruktur = strukturBaru || instansiLama.struktur;
+      const finalLogo = logoBaru ? `/instansi/${logoBaru}` : instansiLama.logo;
+      const finalStruktur = strukturBaru
+        ? `/instansi/${strukturBaru}`
+        : instansiLama.struktur;
 
-      // Jika file baru ada, hapus file lama (opsional)
+      // Hapus file lama jika ada file baru
       if (
         logoBaru &&
         instansiLama.logo &&
@@ -203,6 +207,7 @@ router.put(
       ) {
         fs.unlinkSync(`./instansi/${instansiLama.logo}`);
       }
+
       if (
         strukturBaru &&
         instansiLama.struktur &&
@@ -211,14 +216,11 @@ router.put(
         fs.unlinkSync(`./instansi/${instansiLama.struktur}`);
       }
 
-      // Lanjut update
-      const updateQuery = `
-      UPDATE tbl_instansi 
-      SET deskripsi = ?, visi = ?, misi = ?, alamat = ?, kontak = ?, email = ?, fb = ?, ig = ?, rekening = ?, logo = ?, struktur = ?
-      WHERE id_instansi = ?
-    `;
-      db.query(
-        updateQuery,
+      // Update data
+      await db.query(
+        `UPDATE tbl_instansi 
+        SET deskripsi = ?, visi = ?, misi = ?, alamat = ?, kontak = ?, email = ?, fb = ?, ig = ?, rekening = ?, logo = ?, struktur = ?
+        WHERE id_instansi = ?`,
         [
           deskripsi,
           visi,
@@ -233,14 +235,13 @@ router.put(
           finalStruktur,
           id_instansi,
         ],
-        (err) => {
-          if (err) {
-            return res.status(500).json({ error: err.message });
-          }
-          res.json({ message: 'Data instansi berhasil diperbarui' });
-        },
       );
-    });
+
+      res.json({ message: 'Data instansi berhasil diperbarui' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+    }
   },
 );
 
