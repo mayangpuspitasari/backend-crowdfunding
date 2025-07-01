@@ -1,15 +1,27 @@
-module.exports = (laporan) => {
-  const rows = laporan.map((item, index) => `
+module.exports = (laporan, totalKeseluruhan) => {
+  const rows = laporan
+    .map(
+      (item, index) => `
     <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}">
       <td class="border px-2 py-1 text-center">${index + 1}</td>
       <td class="border px-2 py-1">${item.judul_program}</td>
-      <td class="border px-2 py-1 text-right">Rp${Number(item.target_donasi).toLocaleString('id-ID')}</td>
-      <td class="border px-2 py-1 text-right">Rp${Number(item.total_terkumpul).toLocaleString('id-ID')}</td>
+      <td class="border px-2 py-1 text-right">Rp${Number(
+        item.target_donasi,
+      ).toLocaleString('id-ID')}</td>
+      <td class="border px-2 py-1 text-right">Rp${Number(
+        item.total_terkumpul,
+      ).toLocaleString('id-ID')}</td>
       <td class="border px-2 py-1 text-center">${item.total_donatur}</td>
-      <td class="border px-2 py-1 text-center">${new Date(item.tgl_mulai).toLocaleDateString('id-ID')}</td>
-      <td class="border px-2 py-1 text-center">${new Date(item.tgl_berakhir).toLocaleDateString('id-ID')}</td>
+      <td class="border px-2 py-1 text-center">${new Date(
+        item.tgl_mulai,
+      ).toLocaleDateString('id-ID')}</td>
+      <td class="border px-2 py-1 text-center">${new Date(
+        item.tgl_berakhir,
+      ).toLocaleDateString('id-ID')}</td>
     </tr>
-  `).join('');
+  `,
+    )
+    .join('');
 
   return `
     <!DOCTYPE html>
@@ -39,6 +51,15 @@ module.exports = (laporan) => {
         <tbody>
           ${rows}
         </tbody>
+        <tfoot>
+          <tr class="bg-gray-200 font-semibold">
+            <td colspan="3" class="border px-2 py-2 text-right">Total Keseluruhan</td>
+            <td class="border px-2 py-2 text-right text-green-700">
+              Rp${Number(totalKeseluruhan).toLocaleString('id-ID')}
+            </td>
+            <td colspan="3" class="border px-2 py-2"></td>
+          </tr>
+        </tfoot>
       </table>
       <p class="text-sm mt-6 text-right text-gray-600">
         Dicetak pada: ${new Date().toLocaleString('id-ID')}
@@ -47,3 +68,4 @@ module.exports = (laporan) => {
     </html>
   `;
 };
+
