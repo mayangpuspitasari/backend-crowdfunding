@@ -9,9 +9,10 @@ router.get('/', async (req, res) => {
   const limit = parseInt(req.query.limit) || 6;
   const offset = (page - 1) * limit;
   const search = req.query.search ? `%${req.query.search}%` : '%';
+  const kategori = req.query.kategori || ''; // new line
 
   try {
-    // Ambil data terbaru ke terlama
+    // Query utama
     const [results] = await db.query(
       `
       SELECT 
@@ -21,20 +22,23 @@ router.get('/', async (req, res) => {
       FROM tbl_programdonasi p
       JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
       WHERE p.judul_program LIKE ?
+      AND (k.jenis_kategori = ? OR ? = '')
       ORDER BY p.id_program DESC
       LIMIT ? OFFSET ?
     `,
-      [search, limit, offset],
+      [search, kategori, kategori, limit, offset],
     );
 
+    // Hitung total data untuk pagination
     const [[{ total }]] = await db.query(
       `
       SELECT COUNT(*) as total 
       FROM tbl_programdonasi p
       JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
       WHERE p.judul_program LIKE ?
+      AND (k.jenis_kategori = ? OR ? = '')
     `,
-      [search],
+      [search, kategori, kategori],
     );
 
     res.json({
@@ -49,7 +53,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-
 //ubah status donasi
 router.put('/:id_program/status', async (req, res) => {
   const { id_program } = req.params;
@@ -58,7 +61,7 @@ router.put('/:id_program/status', async (req, res) => {
   try {
     const [result] = await db.query(
       `UPDATE tbl_programdonasi SET status = ? WHERE id_program = ?`,
-      [status, id_program]
+      [status, id_program],
     );
 
     res.json({ success: true, message: 'Status berhasil diperbarui' });
@@ -67,8 +70,6 @@ router.put('/:id_program/status', async (req, res) => {
     res.status(500).json({ success: false, message: 'Gagal update status' });
   }
 });
-
-
 
 // Tambah program
 router.post('/', program.single('gambar'), async (req, res) => {
@@ -140,7 +141,6 @@ router.post('/', program.single('gambar'), async (req, res) => {
   }
 });
 
-
 // Update program
 router.put('/:id_program', program.single('gambar'), async (req, res) => {
   const { id_program } = req.params;
@@ -174,13 +174,18 @@ router.put('/:id_program', program.single('gambar'), async (req, res) => {
 
   try {
     // Ambil data lama untuk gambar jika tidak ada gambar baru
-    const [oldData] = await db.query('SELECT gambar FROM tbl_programdonasi WHERE id_program = ?', [id_program]);
+    const [oldData] = await db.query(
+      'SELECT gambar FROM tbl_programdonasi WHERE id_program = ?',
+      [id_program],
+    );
 
     if (oldData.length === 0) {
       return res.status(404).json({ error: 'Program tidak ditemukan' });
     }
 
-    const gambar = req.file ? `/program/${req.file.filename}` : oldData[0].gambar;
+    const gambar = req.file
+      ? `/program/${req.file.filename}`
+      : oldData[0].gambar;
 
     const sql = `
       UPDATE tbl_programdonasi
@@ -214,8 +219,6 @@ router.put('/:id_program', program.single('gambar'), async (req, res) => {
     res.status(500).json({ error: 'Gagal update program' });
   }
 });
-
-
 
 //hapus program
 router.delete('/:id_program', async (req, res) => {

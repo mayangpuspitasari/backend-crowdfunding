@@ -36,6 +36,23 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Route: /user/profile/:id_user
+router.get('/profile/:id_user', async (req, res) => {
+  const { id_user } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      'SELECT nama FROM tbl_user WHERE id_user = ?',
+      [id_user],
+    );
+    if (rows.length === 0)
+      return res.status(404).json({ error: 'User tidak ditemukan' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET profil user yang sedang login
 router.get('/profile', verifyToken, async (req, res) => {
   const userId = req.user.id;

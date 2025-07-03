@@ -12,11 +12,15 @@ router.get('/', async (req, res) => {
 
   try {
     const [results] = await db.query(
-      `SELECT d.*, u.nama 
+      `SELECT 
+         d.*, 
+         IF(d.anonymous = 1, 'Anonymous', u.nama) AS nama_user, 
+         p.judul_program 
        FROM tbl_donasi d
        JOIN tbl_user u ON d.id_user = u.id_user
-       WHERE u.nama LIKE ?
-       ORDER BY d.id_user DESC
+       JOIN tbl_programdonasi p ON d.id_program = p.id_program
+       WHERE p.judul_program LIKE ?
+       ORDER BY d.id_donasi DESC
        LIMIT ? OFFSET ?`,
       [search, limit, offset],
     );
@@ -25,7 +29,8 @@ router.get('/', async (req, res) => {
       `SELECT COUNT(*) as total 
        FROM tbl_donasi d
        JOIN tbl_user u ON d.id_user = u.id_user
-       WHERE u.nama LIKE ?`,
+       JOIN tbl_programdonasi p ON d.id_program = p.id_program
+       WHERE p.judul_program LIKE ?`,
       [search],
     );
 
@@ -56,20 +61,20 @@ router.post('/', bukti.single('bukti_pembayaran'), async (req, res) => {
 
   try {
     const sql = `
-      INSERT INTO tbl_donasi (
-        bukti_pembayaran, id_user, jumlah_donasi,
-        tanggal_donasi, dukungan, id_program,
-        anonymous, verifikasi, status_donasi
-      ) VALUES (?, ?, ?, NOW(), ?, ?, ?, 0, 'menunggu')
-    `;
+  INSERT INTO tbl_donasi (
+    bukti_pembayaran, id_user, jumlah_donasi,
+    tanggal_donasi, dukungan, id_program,
+    anonymous, verifikasi, status_donasi
+  ) VALUES (?, ?, ?, NOW(), ?, ?, ?, 0, 'menunggu')
+`;
 
     await db.query(sql, [
       bukti_pembayaran,
       id_user,
       jumlah_donasi,
-      dukungan || null,
+      dukungan || '',
       id_program,
-      anonymous ? 1 : 0,
+      parseInt(anonymous) === 1 ? 1 : 0,
     ]);
 
     res.status(200).json({ message: 'Donasi Berhasil Ditambahkan' });
@@ -80,77 +85,89 @@ router.post('/', bukti.single('bukti_pembayaran'), async (req, res) => {
 });
 
 //Verifikasi Donasi Berhasil
-router.put('/verifikasi_berhasil/:id_donasi', (req, res) => {
+router.put('/verifikasi_berhasil/:id_donasi', async (req, res) => {
   const { id_donasi } = req.params;
 
-  // Update status donasi jadi berhasil dan verifikasi = 1
-  const updateStatusSql = `UPDATE tbl_donasi SET verifikasi = 1, status_donasi = 'Berhasil' WHERE id_donasi = ?`;
+  const conn = await db.getConnection(); // pastikan db pool digunakan
+  try {
+    await conn.beginTransaction();
 
-  db.query(updateStatusSql, [id_donasi], (err) => {
-    if (err) {
-      return res.status(500).send(err);
+    // 1. Update status donasi menjadi berhasil
+    const updateStatusSql = `UPDATE tbl_donasi SET verifikasi = 1, status_donasi = 'Berhasil' WHERE id_donasi = ?`;
+    await conn.query(updateStatusSql, [id_donasi]);
+
+    // 2. Ambil data donasi terkait
+    const [donasiResult] = await conn.query(
+      `SELECT id_user, id_program, jumlah_donasi FROM tbl_donasi WHERE id_donasi = ?`,
+      [id_donasi],
+    );
+
+    if (donasiResult.length === 0) {
+      await conn.rollback();
+      return res.status(404).send('Donasi tidak ditemukan');
     }
 
-    // Ambil data donasi setelah diupdate statusnya
-    const getDonasiSql = `SELECT id_user, id_program, jumlah_donasi FROM tbl_donasi WHERE id_donasi = ?`;
+    const donasi = donasiResult[0];
+    const jumlahDonasi = Number(donasi.jumlah_donasi || 0);
 
-    db.query(getDonasiSql, [id_donasi], (err2, results) => {
-      if (err2) return res.status(500).send(err2);
+    // 3. Cek apakah ini donatur pertama untuk program tersebut
+    const [countResult] = await conn.query(
+      `SELECT COUNT(*) AS count FROM tbl_donasi 
+       WHERE id_user = ? AND id_program = ? AND status_donasi = 'Berhasil' AND id_donasi <> ?`,
+      [donasi.id_user, donasi.id_program, id_donasi],
+    );
 
-      if (results.length === 0)
-        return res.status(404).send('Donasi tidak ditemukan');
+    const isFirstDonatur = countResult[0].count === 0;
 
-      const donasi = results[0];
+    // 4. Update data program
+    let updateProgramSql = `UPDATE tbl_programdonasi SET total_terkumpul = total_terkumpul + ?`;
+    const params = [jumlahDonasi];
 
-      // Cek apakah user sudah pernah donasi berhasil ke program ini (kecuali donasi ini)
-      const cekDonaturSql = `
-        SELECT COUNT(*) AS count FROM tbl_donasi
-        WHERE id_user = ? AND id_program = ? AND status_donasi = 'Berhasil' AND id_donasi <> ?`;
+    if (isFirstDonatur) {
+      updateProgramSql += `, jumlah_donatur = jumlah_donatur + 1`;
+    }
 
-      db.query(
-        cekDonaturSql,
-        [donasi.id_user, donasi.id_program, id_donasi],
-        (err3, countResult) => {
-          if (err3) return res.status(500).send(err3);
+    updateProgramSql += ` WHERE id_program = ?`;
+    params.push(donasi.id_program);
 
-          const isFirstDonatur = countResult[0].count === 0;
+    await conn.query(updateProgramSql, params);
 
-          // Update total_terkumpul dan jumlah_donatur di program
-          let updateProgramSql = `UPDATE tbl_programdonasi SET total_terkumpul = total_terkumpul + ?`;
-          const params = [donasi.jumlah_donasi];
-
-          if (isFirstDonatur) {
-            updateProgramSql += `, jumlah_donatur = jumlah_donatur + 1`;
-          }
-          updateProgramSql += ` WHERE id_program = ?`;
-          params.push(donasi.id_program);
-
-          db.query(updateProgramSql, params, (err4) => {
-            if (err4) return res.status(500).send(err4);
-
-            res
-              .status(200)
-              .send(
-                'Donasi berhasil diverifikasi dan total program diperbarui',
-              );
-          });
-        },
-      );
-    });
-  });
+    await conn.commit();
+    res
+      .status(200)
+      .send('Donasi berhasil diverifikasi dan total program diperbarui');
+  } catch (err) {
+    await conn.rollback();
+    console.error('Verifikasi Error:', err);
+    res
+      .status(500)
+      .send(err.message || 'Terjadi kesalahan saat memverifikasi donasi');
+  } finally {
+    conn.release();
+  }
 });
 
-//Verifikasi Donasi Gagal
-router.put('/verifikasi_gagal/:id_donasi', (req, res) => {
+// Verifikasi Donasi Gagal
+router.put('/verifikasi_gagal/:id_donasi', async (req, res) => {
   const { id_donasi } = req.params;
-  const sql = ` UPDATE tbl_donasi SET verifikasi = 0, status_donasi = 'Gagal' WHERE id_donasi = ?`;
 
-  db.query(sql, [id_donasi], (err) => {
-    if (err) {
-      return res.status(500).send(err);
+  try {
+    const [result] = await db.query(
+      `UPDATE tbl_donasi SET verifikasi = 2, status_donasi = 'Gagal' WHERE id_donasi = ?`,
+      [id_donasi],
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Donasi tidak ditemukan');
     }
-    res.status(200).send('Donasi Gagal Diverifikasi');
-  });
+
+    res.status(200).send('Donasi gagal diverifikasi');
+  } catch (err) {
+    console.error('Verifikasi Gagal Error:', err);
+    res
+      .status(500)
+      .send(err.message || 'Terjadi kesalahan saat memverifikasi gagal');
+  }
 });
 
 //Detail Donasi
