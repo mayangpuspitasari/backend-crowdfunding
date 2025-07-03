@@ -12,16 +12,20 @@ router.get('/', async (req, res) => {
 
   try {
     const [results] = await db.query(
-      `SELECT * FROM tbl_donasi
-       WHERE nama LIKE ?
-       ORDER BY id_user DESC
+      `SELECT d.*, u.nama 
+       FROM tbl_donasi d
+       JOIN tbl_user u ON d.id_user = u.id_user
+       WHERE u.nama LIKE ?
+       ORDER BY d.id_user DESC
        LIMIT ? OFFSET ?`,
       [search, limit, offset],
     );
 
     const [[{ total }]] = await db.query(
-      `SELECT COUNT(*) as total FROM tbl_donasi
-       WHERE nama LIKE ?`,
+      `SELECT COUNT(*) as total 
+       FROM tbl_donasi d
+       JOIN tbl_user u ON d.id_user = u.id_user
+       WHERE u.nama LIKE ?`,
       [search],
     );
 
@@ -207,10 +211,10 @@ router.delete('/:id_donasi', async (req, res) => {
 
   try {
     await db.query(sql, [id_donasi]);
-    res.status(200).json({message: 'Donasi Berhasil Dihapus'});
-  }catch (error) {
+    res.status(200).json({ message: 'Donasi Berhasil Dihapus' });
+  } catch (error) {
     console.error('Terjadi Kesalahan saat menghapus Donasi', error);
-    res.status(500).json({message: 'Terjadi Kesalahan Server'});
+    res.status(500).json({ message: 'Terjadi Kesalahan Server' });
   }
 });
 
