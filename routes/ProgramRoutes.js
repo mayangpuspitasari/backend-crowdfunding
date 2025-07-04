@@ -6,13 +6,13 @@ const program = require('../mildware/program');
 //mengambil semua program
 router.get('/', async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 6;
+  const limit = parseInt(req.query.limit) || 5;
   const offset = (page - 1) * limit;
   const search = req.query.search ? `%${req.query.search}%` : '%';
-  const kategori = req.query.kategori || ''; // new line
+  const kategori = req.query.kategori || '';
 
   try {
-    // Query utama
+    // Ambil data program donasi
     const [results] = await db.query(
       `
       SELECT 
@@ -22,8 +22,10 @@ router.get('/', async (req, res) => {
       FROM tbl_programdonasi p
       JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
       WHERE p.judul_program LIKE ?
-      AND (k.jenis_kategori = ? OR ? = '')
-      ORDER BY p.id_program DESC
+        AND (k.jenis_kategori = ? OR ? = '')
+      ORDER BY 
+        p.status = 'Aktif' DESC,
+        p.id_program DESC
       LIMIT ? OFFSET ?
     `,
       [search, kategori, kategori, limit, offset],
@@ -36,7 +38,7 @@ router.get('/', async (req, res) => {
       FROM tbl_programdonasi p
       JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
       WHERE p.judul_program LIKE ?
-      AND (k.jenis_kategori = ? OR ? = '')
+        AND (k.jenis_kategori = ? OR ? = '')
     `,
       [search, kategori, kategori],
     );
@@ -240,7 +242,9 @@ router.get('/terbaru', async (req, res) => {
     SELECT p.*, k.jenis_kategori 
     FROM tbl_programdonasi p
     JOIN tbl_kategori k ON p.id_kategori = k.id_kategori
-    ORDER BY p.id_program DESC
+    ORDER BY 
+      p.status = 'Aktif' DESC,
+      p.id_program DESC
     LIMIT 3
   `;
 

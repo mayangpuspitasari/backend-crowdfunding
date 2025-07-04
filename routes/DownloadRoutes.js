@@ -7,7 +7,9 @@ const generateDetailHTML = require('../utils/laporanDetailTemplate');
 
 router.get('/export/pdf', async (req, res) => {
   try {
-    const sql = `
+    const { from, to } = req.query;
+
+    let sql = `
       SELECT 
         p.id_program,
         p.judul_program,
@@ -18,21 +20,35 @@ router.get('/export/pdf', async (req, res) => {
         COALESCE(SUM(d.jumlah_donasi), 0) AS total_terkumpul
       FROM tbl_programdonasi p
       LEFT JOIN tbl_donasi d ON p.id_program = d.id_program
+      WHERE 1=1
+    `;
+
+    const values = [];
+
+    if (from) {
+      sql += ' AND p.tgl_mulai >= ?';
+      values.push(from);
+    }
+
+    if (to) {
+      sql += ' AND p.tgl_berakhir <= ?';
+      values.push(to);
+    }
+
+    sql += `
       GROUP BY 
         p.id_program, p.judul_program, p.target_donasi, p.tgl_mulai, p.tgl_berakhir
       ORDER BY p.tgl_mulai DESC
     `;
 
-    const [laporan] = await db.query(sql);
+    const [laporan] = await db.query(sql, values);
 
-    // Hitung total keseluruhan
     const totalKeseluruhan = laporan.reduce(
       (acc, item) => acc + Number(item.total_terkumpul),
       0,
     );
 
-    const html = generateHTML(laporan, totalKeseluruhan);
-
+    const html = generateHTML(laporan, totalKeseluruhan, from, to);
     const browser = await puppeteer.launch({ headless: 'new' });
     const page = await browser.newPage();
 

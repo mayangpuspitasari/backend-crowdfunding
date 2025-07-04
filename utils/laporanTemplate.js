@@ -1,4 +1,13 @@
-module.exports = (laporan, totalKeseluruhan) => {
+module.exports = (laporan, totalKeseluruhan, fromDate, toDate) => {
+  const formatTanggal = (tanggal) =>
+    tanggal
+      ? new Date(tanggal).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : '-';
+
   const rows = laporan
     .map(
       (item, index) => `
@@ -35,7 +44,12 @@ module.exports = (laporan, totalKeseluruhan) => {
       </style>
     </head>
     <body class="p-6">
-      <h1 class="text-2xl font-bold text-center mb-6">LAPORAN PROGRAM DONASI</h1>
+      <h1 class="text-2xl font-bold text-center mb-2">LAPORAN PROGRAM DONASI</h1>
+      <p class="text-sm text-gray-700 mb-4 text-center">
+        Periode: ${fromDate ? formatTanggal(fromDate) : '...'} - ${
+    toDate ? formatTanggal(toDate) : '...'
+  }
+      </p>
       <table class="min-w-full border-collapse border border-gray-300 text-sm">
         <thead class="bg-orange-100 text-orange-900 font-semibold text-center">
           <tr>
