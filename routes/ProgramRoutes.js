@@ -72,6 +72,19 @@ router.put('/:id_program/status', async (req, res) => {
     res.status(500).json({ success: false, message: 'Gagal update status' });
   }
 });
+router.get('/all', async (req, res) => {
+  try {
+    const [results] = await db.query(`
+      SELECT 
+        p.id_program, p.judul_program
+      FROM tbl_programdonasi p
+      ORDER BY p.id_program DESC
+    `);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Tambah program
 router.post('/', program.single('gambar'), async (req, res) => {

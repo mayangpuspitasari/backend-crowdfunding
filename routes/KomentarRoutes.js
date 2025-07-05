@@ -4,8 +4,15 @@ const db = require('../config/db');
 
 //Ambil Semua Komentar
 router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 6; // ← limit tetap 6 per halaman
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : '%';
+
   try {
-    const [results] = await db.query(`
+    // Ambil data komentar dengan paginasi dan pencarian
+    const [results] = await db.query(
+      `
       SELECT 
         k.id_komentar,
         u.nama AS nama_user,
@@ -15,12 +22,34 @@ router.get('/', async (req, res) => {
       FROM tbl_komentar k
       JOIN tbl_user u ON k.id_user = u.id_user
       JOIN tbl_programdonasi p ON k.id_program = p.id_program
-    `);
+      WHERE k.komentar LIKE ?
+      ORDER BY k.tanggal_komentar DESC
+      LIMIT ? OFFSET ?
+    `,
+      [search, limit, offset],
+    );
 
-    res.json(results);
+    // Hitung total komentar untuk pagination
+    const [[{ total }]] = await db.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM tbl_komentar k
+      JOIN tbl_user u ON k.id_user = u.id_user
+      JOIN tbl_programdonasi p ON k.id_program = p.id_program
+      WHERE k.komentar LIKE ?
+    `,
+      [search],
+    );
+
+    res.json({
+      data: results,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (err) {
-    console.error('Gagal mengambil semua komentar:', err);
-    res.status(500).json({ error: 'Gagal mengambil semua komentar' });
+    console.error('Gagal mengambil data komentar:', err);
+    res.status(500).json({ error: 'Gagal mengambil data komentar' });
   }
 });
 
@@ -48,7 +77,7 @@ router.get('/program/:id_program', async (req, res) => {
 
     res.json(results);
   } catch (err) {
-    console.error('Gagal mengambil komentar:', err.message); // 🧠 Tampilkan pesan error MySQL
+    console.error('Gagal mengambil komentar:', err.message);
     res.status(500).json({ error: 'Gagal mengambil komentar' });
   }
 });
