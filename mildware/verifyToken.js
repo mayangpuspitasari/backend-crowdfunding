@@ -4,15 +4,24 @@ const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Format: Bearer <token>
 
-  if (!token) return res.status(401).json({ message: 'Token tidak ditemukan' });
+  if (!token) {
+    return res.status(401).json({ message: 'Token tidak ditemukan' });
+  }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Token tidak valid' });
+    if (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res
+          .status(401)
+          .json({ message: 'Token kadaluarsa. Silakan login kembali.' });
+      }
+      return res.status(403).json({ message: 'Token tidak valid' });
+    }
 
-    req.user = user; // Simpan payload token ke req.user
+    req.user = user;
     next();
   });
 };
 
 module.exports = verifyToken;
-// Usage in routes:
+

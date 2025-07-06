@@ -195,7 +195,7 @@ router.post('/login', async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '2h' },
+      { expiresIn: '3h' },
     );
 
     res.json({
@@ -213,22 +213,34 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Update user
+// Update user kelola admin
 router.put('/:id_user', async (req, res) => {
   const { id_user } = req.params;
-  const { nama, no_hp } = req.body;
-
-  const sql = 'UPDATE tbl_user SET nama = ?, no_hp = ? WHERE id_user = ?';
+  const { nama, no_hp, password } = req.body;
 
   try {
-    await db.query(sql, [nama, no_hp, id_user]);
+    let sql, params;
+
+    if (password) {
+      // Hash password baru
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      sql =
+        'UPDATE tbl_user SET nama = ?, no_hp = ?, password = ? WHERE id_user = ?';
+      params = [nama, no_hp, hashedPassword, id_user];
+    } else {
+      // Tidak mengganti password
+      sql = 'UPDATE tbl_user SET nama = ?, no_hp = ? WHERE id_user = ?';
+      params = [nama, no_hp, id_user];
+    }
+
+    await db.query(sql, params);
     res.status(200).json({ message: 'User Berhasil Diedit' });
   } catch (err) {
     console.error('Gagal Edit:', err);
     res.status(500).json({ message: 'Gagal Edit user' });
   }
 });
-
 // Hapus user
 router.delete('/:id_user', async (req, res) => {
   const { id_user } = req.params;
