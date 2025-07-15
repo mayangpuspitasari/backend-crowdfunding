@@ -8,6 +8,22 @@ router.get('/laporan_program', async (req, res) => {
   const limit = 10;
   const offset = (page - 1) * limit;
   const search = `%${req.query.search || ''}%`;
+  const from = req.query.from || null;
+  const to = req.query.to || null;
+
+  let dateFilter = '';
+  const dateParams = [];
+
+  if (from && to) {
+    dateFilter = `AND p.tgl_mulai >= ? AND p.tgl_berakhir <= ?`;
+    dateParams.push(from, to);
+  } else if (from) {
+    dateFilter = `AND p.tgl_mulai >= ?`;
+    dateParams.push(from);
+  } else if (to) {
+    dateFilter = `AND p.tgl_berakhir <= ?`;
+    dateParams.push(to);
+  }
 
   const sql = `
     SELECT 
@@ -22,6 +38,7 @@ router.get('/laporan_program', async (req, res) => {
     LEFT JOIN tbl_donasi d 
       ON p.id_program = d.id_program AND d.verifikasi = 1 AND d.status_donasi = 'berhasil'
     WHERE p.judul_program LIKE ?
+    ${dateFilter}
     GROUP BY 
       p.id_program, 
       p.judul_program, 
@@ -39,13 +56,19 @@ router.get('/laporan_program', async (req, res) => {
       LEFT JOIN tbl_donasi d 
         ON p.id_program = d.id_program AND d.verifikasi = 1 AND d.status_donasi = 'berhasil'
       WHERE p.judul_program LIKE ?
+      ${dateFilter}
       GROUP BY p.id_program
     ) AS filtered
   `;
 
   try {
-    const [results] = await db.query(sql, [search, limit, offset]);
-    const [countResult] = await db.query(countSql, [search]);
+    const [results] = await db.query(sql, [
+      search,
+      ...dateParams,
+      limit,
+      offset,
+    ]);
+    const [countResult] = await db.query(countSql, [search, ...dateParams]);
 
     const totalPages = Math.ceil(countResult[0].total / limit);
 
@@ -82,7 +105,7 @@ router.get('/laporan_program/:id_program', async (req, res) => {
 
     // Hitung total donasi
     const total_donasi = results.reduce(
-      (sum, item) => sum + item.jumlah_donasi,
+      (sum, item) => sum + Number(item.jumlah_donasi),
       0,
     );
 
@@ -95,6 +118,58 @@ router.get('/laporan_program/:id_program', async (req, res) => {
       error: 'Gagal mengambil detail laporan program',
       detail: err,
     });
+  }
+});
+
+//ambil semua laporan untuk cetak
+router.get('/laporan_program_all', async (req, res) => {
+  const search = `%${req.query.search || ''}%`;
+  const from = req.query.from || null;
+  const to = req.query.to || null;
+
+  let dateFilter = '';
+  const dateParams = [];
+
+  if (from && to) {
+    dateFilter = `AND p.tgl_mulai >= ? AND p.tgl_berakhir <= ?`;
+    dateParams.push(from, to);
+  } else if (from) {
+    dateFilter = `AND p.tgl_mulai >= ?`;
+    dateParams.push(from);
+  } else if (to) {
+    dateFilter = `AND p.tgl_berakhir <= ?`;
+    dateParams.push(to);
+  }
+
+  const sql = `
+    SELECT 
+      p.id_program,
+      p.judul_program,
+      p.target_donasi,
+      p.tgl_mulai,
+      p.tgl_berakhir,
+      COUNT(DISTINCT d.id_user) AS total_donatur,
+      COALESCE(SUM(d.jumlah_donasi), 0) AS total_terkumpul
+    FROM tbl_programdonasi p
+    LEFT JOIN tbl_donasi d 
+      ON p.id_program = d.id_program AND d.verifikasi = 1 AND d.status_donasi = 'berhasil'
+    WHERE p.judul_program LIKE ?
+    ${dateFilter}
+    GROUP BY 
+      p.id_program, 
+      p.judul_program, 
+      p.target_donasi,
+      p.tgl_mulai,
+      p.tgl_berakhir
+    ORDER BY p.tgl_mulai ASC
+  `;
+
+  try {
+    const [results] = await db.query(sql, [search, ...dateParams]);
+    res.json({ data: results });
+  } catch (error) {
+    console.error('Gagal mengambil semua data laporan:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

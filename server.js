@@ -7,7 +7,7 @@ const db = require('./config/db');
 
 const app = express();
 
-// 🔧 Middleware
+//  Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -37,7 +37,7 @@ app.use('/kategori', require('./routes/KategoriRoutes'));
 app.use('/kegiatan', require('./routes/KegiatanRoutes'));
 app.use('/donasi', require('./routes/DonasiRoutes'));
 app.use('/laporan', require('./routes/LaporanRoutes'));
-app.use('/download', require('./routes/DownloadRoutes'));
+// app.use('/download', require('./routes/DownloadRoutes'));
 app.use('/komentar', require('./routes/KomentarRoutes'));
 
 // Jalankan server
