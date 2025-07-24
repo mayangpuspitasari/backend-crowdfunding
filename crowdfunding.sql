@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 06, 2025 at 09:54 PM
+-- Generation Time: Jul 24, 2025 at 11:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -75,7 +75,7 @@ CREATE TABLE `tbl_instansi` (
   `email` varchar(25) NOT NULL,
   `fb` varchar(25) NOT NULL,
   `ig` varchar(25) NOT NULL,
-  `rekening` varchar(14) NOT NULL
+  `rekening` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -83,7 +83,7 @@ CREATE TABLE `tbl_instansi` (
 --
 
 INSERT INTO `tbl_instansi` (`id_instansi`, `deskripsi`, `visi`, `misi`, `struktur`, `logo`, `alamat`, `kontak`, `email`, `fb`, `ig`, `rekening`) VALUES
-(5, 'LAZISMU Asahan adalah lembaga nirlaba yang bertugas memberdayakan masyarakat di Kabupaten Asahan, Sumatera Utara. LAZISMU Asahan menghimpun dana zakat, infaq, dan dana kedermawanan lainnya dari berbagai pihak. LAZISMU Asahan didirikan sebagai bagian dari gerakan filantropi Muhammadiyah yang berfokus pada pengelolaan zakat, infak, dan shadaqah (ZIS) di Kabupaten Asahan. Kehadirannya bertujuan mendukung masyarakat dalam menyalurkan dana zakat secara amanah dan tepat sasaran, sekaligus berkontribusi dalam memberdayakan umat di berbagai sektor. Sejak berdiri, LAZISMU Asahan terus berkembang dengan menjalankan berbagai program sosial, pendidikan, ekonomi, dan kemanusiaan yang disesuaikan dengan kebutuhan lokal.', 'Mengangkat visi \"Menjadi Lembaga Amil Zakat Terpercaya\" menerapkan proses 3P yaitu Penghimpunan, Pendistribusian dan Pendayagunaan. Menganut prinsip Amanah, Transparan, Berkemajuan, Profesional dan Layanan.', 'a.	Meningkatkan Efektifitas dan Efesiensi dalam pelayanan dan pengelolaan ZISKA (Zakat, Infaq Shadaqah)\r\nb.	Meningkatkan manfaat dan ZISKA untuk mewujudkan kesejahteraan masyarakat dan penanggulangan kemiskinan \r\nc.	Meningkatkan kemampuan ekonomi Umat', '/instansi/1751334368472-Struktur Organisasi.jpg', '/instansi/1751334368471-lazismu.png', 'Jl. Dr. Setia Budi, Kisaran Kota, Kec. Kota Kisaran Timur, Kabupaten Asahan, Sumatera Utara 21211.', '081265311204', 'lazismuasahan@gmail.com', 'Lazismu Asahan', 'lazismuasahan', '717 6788 186');
+(5, 'LAZISMU Asahan adalah lembaga nirlaba yang bertugas memberdayakan masyarakat di Kabupaten Asahan, Sumatera Utara. LAZISMU Asahan menghimpun dana zakat, infaq, dan dana kedermawanan lainnya dari berbagai pihak. LAZISMU Asahan didirikan sebagai bagian dari gerakan filantropi Muhammadiyah yang berfokus pada pengelolaan zakat, infak, dan shadaqah (ZIS) di Kabupaten Asahan. Kehadirannya bertujuan mendukung masyarakat dalam menyalurkan dana zakat secara amanah dan tepat sasaran, sekaligus berkontribusi dalam memberdayakan umat di berbagai sektor. Sejak berdiri, LAZISMU Asahan terus berkembang dengan menjalankan berbagai program sosial, pendidikan, ekonomi, dan kemanusiaan yang disesuaikan dengan kebutuhan lokal.', 'Mengangkat visi \"Menjadi Lembaga Amil Zakat Terpercaya\" menerapkan proses 3P yaitu Penghimpunan, Pendistribusian dan Pendayagunaan. Menganut prinsip Amanah, Transparan, Berkemajuan, Profesional dan Layanan.', 'a.	Meningkatkan Efektifitas dan Efesiensi dalam pelayanan dan pengelolaan ZISKA (Zakat, Infaq Shadaqah)\r\nb.	Meningkatkan manfaat dan ZISKA untuk mewujudkan kesejahteraan masyarakat dan penanggulangan kemiskinan \r\nc.	Meningkatkan kemampuan ekonomi Umat', '/instansi/1751334368472-Struktur Organisasi.jpg', '/instansi/1751334368471-lazismu.png', 'Jl. Dr. Setia Budi, Kisaran Kota, Kec. Kota Kisaran Timur, Kabupaten Asahan, Sumatera Utara 21211.', '081265311204', 'lazismuasahan@gmail.com', 'Lazismu Asahan', 'lazismuasahan', '717 6788 186 (Bank Sumut)');
 
 -- --------------------------------------------------------
 
@@ -235,7 +235,7 @@ CREATE TABLE `tbl_user` (
 INSERT INTO `tbl_user` (`id_user`, `nama`, `email`, `no_hp`, `foto`, `password`, `role`, `tanggal_daftar`) VALUES
 (3, 'Ega Kurniawan', 'ega@gmail.com', '087765432155', '', '$2b$10$TbsID2Tb', 'donatur', '2025-06-22 11:59:46'),
 (4, 'wahyu', 'wahyu@gmail.com', '098765432133', '', '$2b$10$bqbeYN2r', 'donatur', '2025-06-22 12:27:21'),
-(5, 'Mayang Puspita Sari ', 'mayangpuspita@gmail.com', '082265432211', '/profil/1751261910598-react.png', '$2b$10$uQjVXh7sNs7JxNdofzOBTeqDEUAxAK2HJaZvpT26ak./rjps8GcSa', 'donatur', '2025-06-22 13:52:33'),
+(5, 'Mayang Puspita Sari ', 'mayangpuspita@gmail.com', '082265432211', '/profil/1752568317088-download (1).jpeg', '$2b$10$uQjVXh7sNs7JxNdofzOBTeqDEUAxAK2HJaZvpT26ak./rjps8GcSa', 'donatur', '2025-06-22 13:52:33'),
 (6, 'Mayy', 'may@gmail.com', '083323412345', '', '$2b$10$wRmBoQMA6BAcjaaZuDUefuzXYCNCesmFrFE0uUldpLWQh3J4Mc9Zm', 'donatur', '2025-06-24 13:06:44'),
 (9, 'Admin', 'admin@gmail.com', '123456789900', '/profil/1751252869057-lazismu.png', '$2b$10$EEiRyTxDreOeEC9v/e/WV.Hr1o/Wu3FnydzwLUvAFwZMxo.g3ctQi', 'admin', '2025-06-24 14:02:25'),
 (15, 'Pimpinan', 'pimpinan@gmail.com', '085342665433', '/profil/1751263323015-lazismu.png', '$2b$10$njRON28BeWrvCgVKg6GiaOFfROnVItZ4rd7pPBX8sSbpvCuvumAlW', 'pimpinan', '2025-06-24 21:21:59'),
